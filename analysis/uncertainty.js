@@ -1,6 +1,5 @@
 /**
  * Uncertainty Modell — P24
- * Unterscheide: measurement, estimated, calibrated, derived, simulated
  */
 export function uncertaintyFor({type='estimated', calibration='calibrated', snrDb=38}){
   const map={
@@ -11,7 +10,6 @@ export function uncertaintyFor({type='estimated', calibration='calibrated', snrD
     measurement: {confidence:0.92, label:'MEASUREMENT', color:'#00ff9d'}
   };
   const base=map[type]||map.estimated;
-  // SNR adjust
   const adj = Math.min(0.98, base.confidence + (snrDb-30)*0.005);
   return {...base, confidence:adj, snrDb, calibration};
 }

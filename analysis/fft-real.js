@@ -1,10 +1,8 @@
 /**
  * Real FFT — P8 Live FFT mit echtem DFT (Cooley-Tukey iterativ)
- * Ersetzt Simulation durch echte Analyse, 48kHz, 2048 Punkte
  */
 export function fftReal(samples){
   const N=samples.length;
-  // Bit reversal
   let j=0;
   const re=[...samples], im=new Array(N).fill(0);
   for(let i=1;i<N;i++){
@@ -30,7 +28,6 @@ export function fftReal(samples){
       }
     }
   }
-  // magnitude in dBFS
   const mags=re.map((r,i)=> 20*Math.log10(Math.hypot(r,im[i])/N + 1e-12));
   const freqs=re.map((_,i)=> i*48000/N);
   return {re,im,mags,freqs};

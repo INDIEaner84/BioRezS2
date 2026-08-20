@@ -1,0 +1,12 @@
+{
+  "id": "EXP-2026-08-20-01",
+  "version": 12,
+  "metadata": {"created": "2026-08-20T06:00:00Z", "operator": "admin", "software": "BioRezS2 v2.1"},
+  "generators": [{"id":1, "name":"G1 HELIOS", "frequency":10, "amplitude":8, "waveform":"sine"}],
+  "signals": [{"freq":10, "wave":"sine"}, {"freq":17, "wave":"square"}],
+  "sync": {"commonClock":"10MHz REF", "phaseLock":true},
+  "sequence": [{"at":0, "action":"G1 10Hz"}, {"at":10, "action":"G2 20Hz"}],
+  "calibration": {"amp":"calibrated", "freq":"calibrated", "phase":"expired"},
+  "safety": {"armed":true, "watchdog":5000},
+  "provenance": [{"from":"Experiment", "to":"v12", "ts":"2026-08-20T06:21:07Z"}]
+}
