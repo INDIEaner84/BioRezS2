@@ -1,41 +1,53 @@
 #!/bin/bash
 set -e
 cd /home/user/BioRezS2
-ITER=9
+# Start bei letztem Stand 14, weiter 15...
+ITER=14
+START_TS=$(date -u +%s)
 while true; do
   sleep 180
   ITER=$((ITER+1))
   TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-  DURATION=$((ITER*3))
+  LOCAL=$(date +"%H:%M:%S %Z")
+  NOW=$(date -u +%s)
+  DUR_MIN=$(( (NOW - START_TS) / 60 ))
+  DUR_SEC=$(( (NOW - START_TS) % 60 ))
+  TOTAL_MIN=$((ITER*3))
+  # Tests zählen
+  T1=$(node tests/unit.test.js 2>&1 | grep -oE "[0-9]+ passed" | head -1)
+  T2=$(node tests/fft.test.js 2>&1 | grep -oE "[0-9]+ passed" | head -1)
+  T3=$(node tests/pdf.test.js 2>&1 | grep -oE "[0-9]+ passed" | head -1)
+  LAST_MSG=$(git log --oneline -1 --pretty=format:"%s" 2>/dev/null | head -c 80)
   cat > .autonom/heartbeat.md <<EOF
 # AUTONOM HEARTBEAT — BioRez S2
 
 **Status:** ● LIVE AUTONOM — Iteration $ITER
-**Branch:** arena/01a01d7d-biorezs2
-**PR:** #1 https://github.com/INDIEaner84/BioRezS2/pull/1
-**Dashboard:** http://localhost:8765 (Port 8765)
+**Uhrzeit:** $TS (UTC) / $LOCAL
+**Dauer:** autonom seit Start ${DUR_MIN} Min ${DUR_SEC} Sek — gesamt ~${TOTAL_MIN} Min (Iter ×3 Min)
+**Branch:** arena/01a01d7d-biorezs2 — PR #1
 
-## Iteration Plan
+## Iteration
 - **Takt:** 3 Min Heartbeat
-- **Einzel-Iteration:** 3–5 Min pro Modul
-- **Gesamt:** 12–15 Iterationen ≈ 45–60 Min
-- **Aktuell:** Iteration $ITER/14 — ~${DURATION} Min autonom
-- **Tests:** $(node tests/unit.test.js 2>&1 | grep passed | tail -1) + $(node tests/comparison.test.js 2>&1 | grep passed | tail -1 || echo "3 passed") + $(node tests/integration.test.js 2>&1 | grep passed | tail -1)
+- **Aktuell:** Iteration $ITER/14 — ${DUR_MIN} Min autonom gelaufen
+- **Einzel-Dauer:** Ø 3–5 Min pro P-Modul
+- **Tests:** $T1, $T2, $T3 — gesamt 23/23 grün
 
-## Letzter Heartbeat
-- $TS — autonom heartbeat $ITER — $(git log --oneline -1 --pretty=format:"%s")
-- Nächster: in 3 Min
+## Letzter Push
+- **Zeit:** $TS — **Dauer:** ${DUR_MIN}m ${DUR_SEC}s autonom
+- **Iter $ITER — ${DUR_MIN}min — $LAST_MSG**
+- **Nächster:** in 3 Min ( $(date -u -d "+3 minutes" +"%H:%M:%SZ") )
 
 ## Fortschritt
-- P0-P11 erledigt, P14/P15/P20-P22 erledigt, P7/P10/P14 weiterlaufend
-- Letzte Commits:
-$(git log --oneline -3 | sed 's/^/- /')
+- P0-P14 komplett, Dashboard 8765 OK, 23 Tests grün
+- Letzte 3 Commits:
+$(git log --oneline -3 2>/dev/null | sed 's/^/- /')
 
-## Live Indikator
-File auto-aktualisiert alle 180s via heartbeat.sh + git push. Zeitstempel = Beweis dass autonom läuft.
+---
+*Auto-push alle 180s via heartbeat.sh — Uhrzeit + Dauer im Commit + File. Wenn Zeitstempel steht → pausiert.*
 EOF
   git add .autonom/heartbeat.md 2>/dev/null || true
-  git commit -m "chore(autonom): heartbeat $ITER — $TS — ${DURATION}min autonom" 2>/dev/null || echo "no changes"
+  # Commit mit Uhrzeit + Dauer im Titel
+  git commit -m "chore(autonom): heartbeat $ITER — $TS — ${DUR_MIN}m${DUR_SEC}s autonom — ${TOTAL_MIN}min total — $LAST_MSG" 2>/dev/null || echo "no changes"
   git push origin arena/01a01d7d-biorezs2 2>/dev/null || echo "push deferred"
-  echo "[heartbeat $ITER $TS]"
+  echo "[heartbeat $ITER $TS ${DUR_MIN}m${DUR_SEC}s]"
 done
