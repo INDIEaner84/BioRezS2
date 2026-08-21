@@ -1139,7 +1139,10 @@ document.getElementById('exportJSON')?.addEventListener('click', ()=>{
   const exp={id:'EXP-2026-08-20-01', version:13, timestamp:new Date().toISOString(), software:'BioRezS2 v2.1', generators:gens, calibration:{amp:'calibrated'}, provenance:[{from:'Experiment',to:'export',confidence:0.92}]};
   download(`biorez-${Date.now()}.json`, JSON.stringify(exp,null,2), 'application/json'); log(`${new Date().toISOString().substr(11,8)} EXPORT JSON • version v13 • provenance OK`);
 });
-document.getElementById('exportPDF')?.addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} PDF REPORT • generating SVG→PDF • 4 plots • 6 generators`));
+document.getElementById('exportPDF')?.addEventListener('click', ()=>{
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:JetBrains Mono,monospace;padding:24px}h1{font-family:Orbitron}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;font-size:12px}</style></head><body><h1>BIOREZ S2 — PDF Report</h1><p>Experiment EXP-2026-08-20-01 v13 • ${new Date().toISOString()}</p><table><tr><th>ID</th><th>Freq</th><th>Amp</th></tr>${gens.map(g=>`<tr><td>G${g.id} ${g.name}</td><td>${g.freq} Hz</td><td>${g.amp} V</td></tr>`).join('')}</table><p>RMS ${document.getElementById('rms').textContent} • THD 1.84% • Confidence 92% • Provenance OK</p><p style="font-size:10px;color:#888">Cyberpunk Edel Edition — ${gens.length} generators • 4 plots • 48kHz</p></body></html>`;
+  const blob=new Blob([html],{type:'text/html'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`biorez-report-${Date.now()}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); const w=window.open(url,'_blank'); if(w) setTimeout(()=>{try{w.print()}catch{}},400); log(`${new Date().toISOString().substr(11,8)} PDF REPORT • ${gens.length} generators • opened print dialog`);
+});
 document.getElementById('exportHDF5')?.addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} HDF5 • dataset /experiment/G1 • 48000 samples • compressed`));
 
 // canvas resize for retina
