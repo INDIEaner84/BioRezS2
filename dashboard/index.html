@@ -335,6 +335,12 @@ a{color:var(--cyan)}
         <div class="head-actions">
           <button class="btn small" id="addGen">+ ADD</button>
           <label class="btn small gold" style="cursor:pointer" for="presetFile">📁 PRESET IMPORT</label><input type="file" id="presetFile" accept=".txt,.json" style="display:none">
+          <select id="presetExamples" class="btn small" style="background:rgba(255,200,87,.12);border:1px solid rgba(255,200,87,.22);color:#fff3d0;padding:5px 6px;border-radius:9px;font-family:'JetBrains Mono';font-size:10px">
+            <option value="">BEISPIELE ▼</option>
+            <option value="Beispiel_Detox_Contact.txt">Detox Contact — 10/17/23/40/100/1000 Hz</option>
+            <option value="Beispiel_Intestinal_Parasites.txt">Intestinal Parasites — 20/120/2720/10000 Hz</option>
+            <option value="Beispiel_Sweep_10_1000.txt">Sweep 10→1000 Hz LOG</option>
+          </select>
           <button class="btn small mag" id="discoverHW">🔍 DISCOVER HW</button>
           <button class="btn small gold" id="groupBtn">GROUP</button>
         </div>
@@ -1018,33 +1024,41 @@ document.getElementById('discoverHW')?.addEventListener('click', async ()=>{
     }
   }, 900);
 });
+async function handlePresetText(text, name){
+  const isSpooky = text.includes('List4');
+  let steps=[];
+  if(isSpooky){
+    const m=text.match(/"List4"\s*=\s*"([^"]+)"/);
+    const code=m?m[1]:text.slice(0,400);
+    steps=code.split(',').slice(0,6).map((tok,i)=>{ const mm=tok.match(/([\d.]+)(?:-([\d.]+))?(?:=\s*([\d.]+))?/); return mm?{f1:mm[1], f2:mm[2]||mm[1], dur:mm[3]||180}:null; }).filter(Boolean);
+  } else {
+    steps=text.split(/[,\n]+/).slice(0,6).map(t=>{ const mm=t.trim().match(/([\d.]+)/); return mm?{f1:mm[1], dur:180}:null;}).filter(Boolean);
+  }
+  steps.slice(0,3).forEach((s,i)=>{
+    const id=gens.length+1;
+    gens.push({id, name:`PRESET G${id} ${parseFloat(s.f1).toFixed(1)}Hz`, model:`${name} • Virtual`, freq: parseFloat(s.f1), amp: 5, wave:'sine', phase:0, duty:50, offset:0, on:true, color:['#00f0ff','#ffc857','#ff2e93'][i%3]});
+  });
+  renderGenerators();
+  log(`${new Date().toISOString().substr(11,8)} PRESET OK • ${name} • ${steps.length} steps • Dauer ${steps.reduce((a,s)=>a+parseInt(s.dur||180),0)}s • Sequencer → Provenance`);
+  const seqInfo=document.querySelector('#timeline')?.parentElement?.parentElement?.querySelector('.metric');
+  if(seqInfo) seqInfo.innerHTML=`Experiment <b style="color:var(--cyan)">${name.replace('.txt','')}</b> • <span style="color:var(--gold)">${steps.length} Programme</span>`;
+}
+document.getElementById('presetExamples')?.addEventListener('change', async (e)=>{
+  const v=e.target.value; if(!v) return;
+  try{ const text=await fetch(`../presets/${v}`).then(r=>r.text()); if(!text || text.startsWith('<!DOCTYPE')) throw new Error('not found, using embedded'); await handlePresetText(text, v); } catch{ 
+    const map={
+      "Beispiel_Detox_Contact.txt":'"List2"="Detox (C) - BY"\n"List4"="10=180,17=180,23=180,40=180,100=180,1000=180"',
+      "Beispiel_Intestinal_Parasites.txt":'"List2"="Intestinal Parasites (C) - BY"\n"List4"="20=180,120=180,2720=180,10000=180"',
+      "Beispiel_Sweep_10_1000.txt":'"List2"="Sweep 10-1000 Hz LOG"\n"List4"="10-1000=30"'
+    }; await handlePresetText(map[v], v);
+  }
+  e.target.value="";
+});
 document.getElementById('presetFile')?.addEventListener('change', async (e)=>{
   const f=e.target.files[0]; if(!f) return;
   const text=await f.text();
   log(`${new Date().toISOString().substr(11,8)} PRESET IMPORT • ${f.name} • ${text.length} bytes • parsing...`);
-  try{
-    // Simuliere core/preset.js parse (im Dashboard inline)
-    const isSpooky = text.includes('List4');
-    let steps=[];
-    if(isSpooky){
-      const m=text.match(/"List4"\s*=\s*"([^"]+)"/);
-      const code=m?m[1]:text.slice(0,200);
-      steps=code.split(',').slice(0,6).map((tok,i)=>{ const mm=tok.match(/([\d.]+)(?:-([\d.]+))?(?:=\s*([\d.]+))?/); return mm?{f1:mm[1], f2:mm[2]||mm[1], dur:mm[3]||180}:null; }).filter(Boolean);
-    } else {
-      steps=text.split(/[,\n]+/).slice(0,6).map(t=>{ const mm=t.trim().match(/([\d.]+)/); return mm?{f1:mm[1], dur:180}:null;}).filter(Boolean);
-    }
-    // Füge als neue Generatoren hinzu (max 3)
-    steps.slice(0,3).forEach((s,i)=>{
-      const id=gens.length+1;
-      gens.push({id, name:`PRESET G${id} ${parseFloat(s.f1).toFixed(1)}Hz`, model:'Imported Preset • Virtual', freq: parseFloat(s.f1), amp: 5, wave:'sine', phase:0, duty:50, offset:0, on:true, color:['#00f0ff','#ffc857','#ff2e93'][i%3]});
-    });
-    renderGenerators();
-    // Sequencer Timeline aktualisieren (simuliert)
-    log(`${new Date().toISOString().substr(11,8)} PRESET IMPORT OK • ${steps.length} steps • Dauer ${steps.reduce((a,s)=>a+parseInt(s.dur||180),0)}s • Sequencer aktualisiert • Provenance: Spooky2 Preset`);
-    // Zeige Preset Info im Sequencer
-    const seqInfo=document.querySelector('#timeline')?.parentElement?.querySelector('.metric');
-    if(seqInfo) seqInfo.innerHTML=`Experiment <b style="color:var(--cyan)">${f.name.replace('.txt','')}</b> • <span style="color:var(--gold)">${steps.length} Programme</span> • ${isSpooky?'Spooky2':'List'}`;
-  } catch(err){ log(`${new Date().toISOString().substr(11,8)} PRESET ERROR • ${err.message}`); }
+  try{ await handlePresetText(text, f.name); } catch(err){ log(`${new Date().toISOString().substr(11,8)} PRESET ERROR • ${err.message}`); }
 });
 document.getElementById('playSeq').addEventListener('click', ()=>{
   let btn=document.getElementById('playSeq');

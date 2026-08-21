@@ -1,0 +1,3 @@
+"List2"="Intestinal Parasites (C) - BY"
+"List4"="20=180,120=180,2720=180,10000=180"
+"Desc"="Beispiel: Parasites — 4 Frequenzen, Intestinal"
