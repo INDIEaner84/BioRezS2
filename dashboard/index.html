@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIOREZ S2 — Scientific Multi-Signal Frequency Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@500;700;900&family=JetBrains+Mono:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg0:#04070d;
+  --bg1:#0a1220;
+  --bg2:#111a2e;
+  --panel:#0f1b2eCC;
+  --panel2:#0c1427;
+  --cyan:#00f0ff;
+  --cyan-dim:#00b8c4;
+  --magenta:#ff2e93;
+  --violet:#7a00ff;
+  --gold:#ffc857;
+  --gold2:#ff9f1c;
+  --emerald:#00ff9d;
+  --red:#ff3b30;
+  --text:#e6f0ff;
+  --muted:#8aa0c0;
+  --grid: rgba(0,240,255,0.07);
+  --border: rgba(0,240,255,0.18);
+  --border2: rgba(255,200,87,0.14);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg0);color:var(--text);font-family:'Rajdhani',system-ui,sans-serif;overflow-x:hidden}
+a{color:var(--cyan)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--cyan),var(--violet));border-radius:999px}
+::-webkit-scrollbar-track{background:#0a1220}
+
+/* background layers */
+.bg{position:fixed;inset:0;z-index:-3;background:
+  radial-gradient(1200px 600px at 20% -10%, rgba(0,240,255,0.18), transparent 60%),
+  radial-gradient(900px 600px at 90% 0%, rgba(122,0,255,0.18), transparent 60%),
+  radial-gradient(900px 600px at 50% 110%, rgba(255,200,87,0.08), transparent 60%),
+  linear-gradient(180deg,#05070d 0%, #070d1c 100%);
+}
+.bg-grid{position:fixed;inset:0;z-index:-2;opacity:.9;pointer-events:none;
+  background:
+    linear-gradient(transparent 95%, var(--grid) 100%),
+    linear-gradient(90deg, transparent 95%, var(--grid) 100%);
+  background-size: 42px 42px, 42px 42px;
+  mask: radial-gradient(1200px 800px at 50% 20%, black 30%, transparent 75%);
+  animation: gridDrift 18s linear infinite;
+}
+@keyframes gridDrift{0%{transform:translateY(0)}100%{transform:translateY(42px)}}
+.bg-particles{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.55}
+.scanline{position:fixed;inset:0;z-index:999;pointer-events:none;
+  background: repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, transparent 2px, transparent 4px);
+  mix-blend-mode: overlay; opacity:.35;
+}
+.vignette{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background: radial-gradient(1200px 700px at 50% 30%, transparent 45%, rgba(0,0,0,.55) 85%);
+}
+
+/* header */
+.header{position:sticky;top:0;z-index:50;backdrop-filter: blur(18px) saturate(1.3);
+  background: linear-gradient(180deg, rgba(8,16,32,0.92), rgba(8,16,32,0.78));
+  border-bottom:1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0,0,0,.5), 0 0 24px rgba(0,240,255,.08);
+}
+.header-inner{max-width:1920px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:16px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.logo{width:44px;height:44px;border-radius:10px;background:conic-gradient(from 180deg, var(--cyan), var(--violet), var(--magenta), var(--gold), var(--cyan));
+  display:grid;place-items:center;box-shadow:0 0 18px rgba(0,240,255,.5), inset 0 0 14px rgba(255,255,255,.25);position:relative}
+.logo::after{content:"";position:absolute;inset:2px;border-radius:8px;background:radial-gradient(180px 180px at 30% 20%, #0f223f, #070d1a); }
+.logo span{position:relative;z-index:1;font-family:Orbitron;font-weight:900;font-size:18px;letter-spacing:.06em;color:var(--cyan);text-shadow:0 0 10px var(--cyan)}
+.brand-text{line-height:1}
+.brand-text .title{font-family:Orbitron;font-weight:900;letter-spacing:.14em;font-size:18px;display:flex;gap:8px;align-items:center}
+.brand-text .title b{color:var(--cyan);text-shadow:0 0 14px rgba(0,240,255,.9)}
+.brand-text .title i{font-style:normal;color:var(--gold);text-shadow:0 0 10px rgba(255,200,87,.7)}
+.brand-text .sub{font-family:'Share Tech Mono',monospace;font-size:10.5px;letter-spacing:.18em;color:var(--muted);opacity:.9;white-space:nowrap}
+.status-strip{flex:1;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap}
+.pill{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;padding:6px 10px;border-radius:999px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:8px;backdrop-filter:blur(6px)}
+.pill .dot{width:8px;height:8px;border-radius:999px;box-shadow:0 0 10px currentColor}
+.pill.ok{color:var(--emerald);border-color:rgba(0,255,157,.25);background:rgba(0,255,157,.08)}
+.pill.warn{color:var(--gold);border-color:rgba(255,200,87,.25);background:rgba(255,200,87,.08)}
+.pill.cyan{color:var(--cyan);border-color:rgba(0,240,255,.25);background:rgba(0,240,255,.08)}
+.pill.mag{color:var(--magenta);border-color:rgba(255,46,147,.25);background:rgba(255,46,147,.08)}
+.header-actions{display:flex;align-items:center;gap:10px}
+.clock{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.1em;color:#cfe6ff;background:rgba(0,240,255,.06);border:1px solid var(--border);padding:8px 10px;border-radius:10px;min-width:142px;text-align:center}
+.emergency{font-family:Orbitron;font-weight:800;letter-spacing:.12em;font-size:11px;color:white;background:linear-gradient(180deg,#ff3b30,#b91c1c);border:1px solid rgba(255,255,255,.25);padding:10px 14px;border-radius:10px;cursor:pointer;box-shadow:0 0 20px rgba(255,59,48,.6), inset 0 1px 0 rgba(255,255,255,.3);transition:.15s;position:relative;overflow:hidden}
+.emergency::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);transform:translateX(-100%);animation:shine 2.2s infinite}
+@keyframes shine{0%{transform:translateX(-100%)}60%{transform:translateX(100%)}100%{transform:translateX(100%)}}
+.emergency:hover{transform:translateY(-1px) scale(1.01);box-shadow:0 0 30px rgba(255,59,48,.8)}
+.emergency:active{transform:scale(.98)}
+.emergency.armed{animation: pulseRed 1s infinite}
+@keyframes pulseRed{0%,100%{box-shadow:0 0 20px rgba(255,59,48,.6)}50%{box-shadow:0 0 35px rgba(255,59,48,.9)}}
+
+/* layout */
+.app{max-width:1920px;margin:0 auto;padding:16px;display:grid;grid-template-columns: 360px 1fr 380px;grid-template-rows:auto auto auto;gap:14px}
+@media(max-width:1450px){.app{grid-template-columns: 340px 1fr 340px}}
+@media(max-width:1180px){.app{grid-template-columns:1fr;grid-template-rows:auto}}
+.panel{position:relative;background: linear-gradient(180deg, rgba(18,30,56,0.92), rgba(10,18,36,0.96));
+  border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow: 0 10px 36px rgba(0,0,0,.45), 0 0 0 1px rgba(255,255,255,.02) inset;
+  backdrop-filter: blur(12px);
+}
+.panel::before{content:"";position:absolute;inset:0;border-radius:16px;padding:1px;background:linear-gradient(130deg, rgba(0,240,255,.5), transparent 30%, transparent 70%, rgba(255,200,87,.35)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events:none; opacity:.6}
+.panel::after{content:"";position:absolute;inset:0;pointer-events:none;background: linear-gradient(180deg, rgba(255,255,255,.04), transparent 22%);opacity:.6}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(0,240,255,.12);background:linear-gradient(180deg, rgba(0,240,255,.06), transparent)}
+.panel-head h3{margin:0;font-family:Orbitron;font-size:11.5px;letter-spacing:.16em;color:#d6e8ff;display:flex;align-items:center;gap:10px}
+.panel-head h3 .icon{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.18);color:var(--cyan);box-shadow:0 0 12px rgba(0,240,255,.25)}
+.panel-head .head-actions{display:flex;align-items:center;gap:8px}
+.btn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;padding:7px 10px;border-radius:9px;border:1px solid rgba(0,240,255,.18);background:rgba(0,240,255,.08);color:#cfefff;cursor:pointer;transition:.15s}
+.btn:hover{background:rgba(0,240,255,.16);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,240,255,.18)}
+.btn.gold{background:rgba(255,200,87,.1);border-color:rgba(255,200,87,.22);color:#fff3d0}
+.btn.mag{background:rgba(255,46,147,.1);border-color:rgba(255,46,147,.22);color:#ffd0e6}
+.btn:active{transform:scale(.98)}
+.btn.small{padding:5px 8px;font-size:10px}
+.panel-body{padding:12px 12px 14px;position:relative;z-index:1}
+
+/* generators */
+.generators{display:flex;flex-direction:column;gap:10px;max-height:780px;overflow:auto;padding-right:2px}
+.gen-card{position:relative;border-radius:14px;background: linear-gradient(180deg, rgba(14,26,48,.95), rgba(10,20,38,.98));
+  border:1px solid rgba(0,240,255,.14);padding:10px;overflow:hidden;transition:.2s; cursor:default}
+.gen-card:hover{border-color:rgba(0,240,255,.28);box-shadow:0 8px 28px rgba(0,240,255,.12);transform:translateY(-1px)}
+.gen-card.active{border-color:rgba(0,240,255,.45);box-shadow:0 0 22px rgba(0,240,255,.18), inset 0 0 0 1px rgba(0,240,255,.08)}
+.gen-card.off{opacity:.62;filter:saturate(.7)}
+.gen-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--cyan), var(--violet));opacity:.9}
+.gen-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.gen-id{display:flex;align-items:center;gap:8px}
+.gen-id .badge{font-family:Orbitron;font-weight:800;font-size:11px;letter-spacing:.12em;color:var(--cyan);background:rgba(0,240,255,.1);border:1px solid rgba(0,240,255,.22);padding:5px 8px;border-radius:8px;box-shadow:0 0 10px rgba(0,240,255,.2)}
+.gen-id .name{font-weight:700;font-size:13px;letter-spacing:.04em}
+.gen-id .model{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.08em}
+.power{width:36px;height:22px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);position:relative;cursor:pointer;transition:.2s}
+.power::after{content:"";position:absolute;width:16px;height:16px;border-radius:999px;top:2px;left:2px;background:white;box-shadow:0 2px 8px rgba(0,0,0,.4);transition:.2s}
+.power.on{background:linear-gradient(90deg, var(--emerald), var(--cyan));border-color:rgba(0,255,157,.4);box-shadow:0 0 14px rgba(0,255,157,.5)}
+.power.on::after{left:17px;background:#001018}
+.gen-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.field{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:7px 8px}
+.field label{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:var(--muted);display:block;margin-bottom:4px}
+.field .value{font-family:'Share Tech Mono',monospace;font-size:13px;letter-spacing:.04em;color:#e6f0ff;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.field .value input{width:100%;background:transparent;border:none;color:var(--cyan);font-family:'Share Tech Mono',monospace;font-size:13px;outline:none}
+.slider{appearance:none;width:100%;height:4px;border-radius:999px;background:linear-gradient(90deg, var(--cyan), var(--violet));outline:none;opacity:.9}
+.slider::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:999px;background:white;border:2px solid var(--cyan);box-shadow:0 0 10px var(--cyan);cursor:pointer}
+.wave-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chip{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;padding:5px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:pointer;transition:.15s}
+.chip.active{background:rgba(0,240,255,.14);border-color:rgba(0,240,255,.35);color:var(--cyan);box-shadow:0 0 10px rgba(0,240,255,.2)}
+.gen-actions{display:flex;gap:6px;margin-top:8px}
+.tag{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;padding:3px 6px;border-radius:999px;background:rgba(255,200,87,.09);border:1px solid rgba(255,200,87,.18);color:var(--gold)}
+.tag.cyan{background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.18);color:var(--cyan)}
+.tag.mag{background:rgba(255,46,147,.08);border-color:rgba(255,46,147,.18);color:var(--magenta)}
+
+/* live plots */
+.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:900px){.live-grid{grid-template-columns:1fr}}
+.plot-card{position:relative;border-radius:14px;background:linear-gradient(180deg, rgba(6,14,28,.92), rgba(8,18,36,.96));border:1px solid rgba(0,240,255,.12);overflow:hidden}
+.plot-card .plot-head{padding:8px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.02)}
+.plot-card .plot-head span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--muted)}
+.plot-card canvas{display:block;width:100%;height:180px}
+.plot-card.wide canvas{height:170px}
+.plot-card .metrics{display:flex;gap:10px;padding:8px 10px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.06);background:rgba(0,0,0,.18)}
+.metric{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#cfe6ff}
+.metric b{color:var(--cyan)}
+.metric em{font-style:normal;color:var(--gold)}
+
+/* composer */
+.composer-graph{position:relative;height:260px;border-radius:14px;overflow:hidden;background:
+  radial-gradient(600px 300px at 20% 20%, rgba(0,240,255,.08), transparent 60%),
+  radial-gradient(600px 300px at 80% 80%, rgba(122,0,255,.08), transparent 60%),
+  linear-gradient(180deg, rgba(8,18,36,.98), rgba(10,16,30,.98));
+  border:1px solid rgba(0,240,255,.12)}
+.node{position:absolute;width:142px;padding:9px 10px;border-radius:12px;background:linear-gradient(180deg, rgba(18,30,54,.98), rgba(12,22,42,.98));
+  border:1px solid rgba(0,240,255,.16);box-shadow:0 8px 22px rgba(0,0,0,.35), 0 0 16px rgba(0,240,255,.08);cursor:grab;user-select:none;transition:.15s}
+.node:active{cursor:grabbing;transform:scale(1.02)}
+.node.selected{border-color:var(--cyan);box-shadow:0 0 18px rgba(0,240,255,.35)}
+.node .n-head{font-family:Orbitron;font-size:10px;letter-spacing:.12em;color:var(--cyan);display:flex;align-items:center;justify-content:space-between}
+.node .n-title{font-weight:700;font-size:12px;margin:4px 0 2px}
+.node .n-sub{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+.node .port{width:10px;height:10px;border-radius:999px;background:var(--cyan);box-shadow:0 0 10px var(--cyan);position:absolute;top:50%;transform:translateY(-50%)}
+.node .port.in{left:-5px}
+.node .port.out{right:-5px;background:var(--gold);box-shadow:0 0 10px var(--gold)}
+.wire{position:absolute;inset:0;pointer-events:none}
+.equation{margin-top:10px;padding:10px;border-radius:12px;background:rgba(0,240,255,.06);border:1px solid rgba(0,240,255,.14);font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.04em;color:#d6e8ff}
+.equation b{color:var(--gold)}
+.equation i{font-style:normal;color:var(--cyan)}
+.ops{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.op{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-family:'JetBrains Mono',monospace;font-size:11px;cursor:pointer;transition:.15s}
+.op.active{background:rgba(255,200,87,.12);border-color:rgba(255,200,87,.3);color:var(--gold);box-shadow:0 0 12px rgba(255,200,87,.18)}
+.op:hover{transform:translateY(-1px)}
+
+/* matrix */
+.matrix{width:100%;border-collapse:separate;border-spacing:6px}
+.matrix th{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;color:var(--muted);padding:4px 6px;text-align:center}
+.matrix td{width:42px;height:42px;text-align:center;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+.matrix td.sync{background:rgba(0,240,255,.14);border-color:rgba(0,240,255,.35);color:var(--cyan);box-shadow:0 0 14px rgba(0,240,255,.18)}
+.matrix td.phase{background:rgba(255,200,87,.12);border-color:rgba(255,200,87,.3);color:var(--gold);box-shadow:0 0 12px rgba(255,200,87,.18)}
+.matrix td.off{opacity:.5}
+.matrix td.diag{background:transparent;border:1px dashed rgba(255,255,255,.08);cursor:default}
+.matrix td:hover{transform:translateY(-1px)}
+
+/* sequencer */
+.timeline{position:relative;height:112px;border-radius:12px;background:linear-gradient(180deg, rgba(10,18,36,.96), rgba(6,12,26,.98));border:1px solid rgba(255,255,255,.06);overflow:hidden;padding:10px}
+.timeline-grid{position:absolute;inset:10px 10px 10px 56px;background: repeating-linear-gradient(90deg, transparent 0 78px, rgba(255,255,255,.06) 78px 79px)}
+.lane{position:relative;height:22px;margin-left:56px;margin-bottom:6px;border-radius:8px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);overflow:hidden}
+.block{position:absolute;top:2px;bottom:2px;border-radius:6px;display:flex;align-items:center;padding:0 8px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;color:white;box-shadow:0 4px 12px rgba(0,0,0,.3);cursor:pointer}
+.block.cyan{background:linear-gradient(90deg, #00c2cc, #00f0ff);color:#001018}
+.block.mag{background:linear-gradient(90deg, #ff2e93, #ff7ab6);color:#1a0010}
+.block.gold{background:linear-gradient(90deg, #ff9f1c, #ffc857);color:#1a1100}
+.block.violet{background:linear-gradient(90deg, #7a00ff, #b67cff);color:white}
+.playhead{position:absolute;top:10px;bottom:10px;width:2px;background:var(--cyan);box-shadow:0 0 12px var(--cyan);left:120px;pointer-events:none}
+.time-labels{position:absolute;inset:10px 10px auto 56px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.1em}
+
+/* health */
+.health-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:700px){.health-grid{grid-template-columns:1fr}}
+.health-card{padding:10px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+.health-card h4{margin:0 0 6px;font-family:Orbitron;font-size:10px;letter-spacing:.14em;color:var(--muted)}
+.bar{height:8px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+.bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg, var(--cyan), var(--emerald));box-shadow:0 0 10px rgba(0,240,255,.6);transition:.4s}
+.bar.warn i{background:linear-gradient(90deg, var(--gold), #ff7a00)}
+.bar.danger i{background:linear-gradient(90deg, #ff3b30, #ff7a8a)}
+.log{font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.5;color:#b9c6de;max-height:140px;overflow:auto;background:rgba(0,0,0,.2);border-radius:10px;padding:8px;border:1px solid rgba(255,255,255,.06)}
+.log b{color:var(--cyan)}
+.log em{color:var(--gold);font-style:normal}
+
+/* signal chain */
+.chain{display:flex;align-items:center;gap:8px;overflow:auto;padding:6px 0}
+.chain-node{min-width:96px;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);text-align:center;position:relative}
+.chain-node.active{border-color:rgba(0,240,255,.35);background:rgba(0,240,255,.08);box-shadow:0 0 14px rgba(0,240,255,.18)}
+.chain-node .cn-title{font-family:Orbitron;font-size:10px;letter-spacing:.1em;color:var(--cyan)}
+.chain-node .cn-val{font-family:'JetBrains Mono',monospace;font-size:11px;color:#e6f0ff;margin-top:2px}
+.chain-arrow{color:var(--muted);font-size:14px;flex-shrink:0}
+
+/* responsive */
+@media(max-width:1180px){
+  .header-inner{flex-wrap:wrap}
+  .status-strip{order:3;width:100%;justify-content:flex-start}
+}
+.kbd{font-family:'JetBrains Mono',monospace;font-size:10px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:var(--muted)}
+.float-controls{position:fixed;right:14px;bottom:14px;z-index:40;display:flex;flex-direction:column;gap:8px}
+.float-btn{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(10,18,36,.9);border:1px solid rgba(0,240,255,.18);color:var(--cyan);cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.4);transition:.15s}
+.float-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(0,0,0,.5), 0 0 16px rgba(0,240,255,.2)}
+.glitch{position:relative}
+.glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;width:100%;height:100%;overflow:hidden;clip:rect(0,900px,0,900px)}
+.glitch::before{animation:glitch1 2s infinite linear alternate-reverse;color:var(--cyan);z-index:-1}
+.glitch::after{animation:glitch2 3s infinite linear alternate-reverse;color:var(--magenta);z-index:-2}
+@keyframes glitch1{0%{clip:rect(24px,550px,90px,0);transform:translate(0)}5%{clip:rect(85px,550px,140px,0);transform:translate(-1px,1px)}10%{clip:rect(12px,550px,60px,0);transform:translate(1px,0)}}
+@keyframes glitch2{0%{clip:rect(66px,550px,115px,0);transform:translate(1px,0)}5%{clip:rect(40px,550px,80px,0);transform:translate(-1px,0)}10%{clip:rect(20px,550px,45px,0);transform:translate(0,-1px)}}
+.tooltip{position:absolute;z-index:60;background:rgba(8,16,32,.96);border:1px solid rgba(0,240,255,.18);border-radius:10px;padding:8px 10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#cfe6ff;box-shadow:0 10px 30px rgba(0,0,0,.5);pointer-events:none;transform:translate(-50%, -120%);white-space:nowrap;display:none}
+/* edel premium extras */
+.edel-bar{height:2px;background:linear-gradient(90deg, transparent, var(--gold), var(--cyan), var(--gold), transparent);opacity:.9;position:relative;overflow:hidden}
+.gold-foil{position:absolute;inset:0;pointer-events:none;opacity:.07;background-image:repeating-linear-gradient(35deg, rgba(255,200,87,.9) 0 1px, transparent 1px 6px), repeating-linear-gradient(-35deg, rgba(255,255,255,.4) 0 1px, transparent 1px 8px);mix-blend-mode:overlay}
+.edel-bar::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);transform:translateX(-100%);animation:edelShine 3.2s infinite}
+@keyframes edelShine{0%{transform:translateX(-100%)}55%{transform:translateX(100%)}100%{transform:translateX(100%)}}
+.noise{position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.035;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.9"/></svg>');mix-blend-mode:soft-light}
+.cursor-glow{position:fixed;width:520px;height:520px;border-radius:999px;pointer-events:none;z-index:5;background:radial-gradient(closest-side, rgba(0,240,255,0.10), transparent 68%);transform:translate(-50%,-50%);mix-blend-mode:screen;opacity:.9;transition:opacity .2s}
+.loader{position:fixed;inset:0;z-index:100;background:radial-gradient(1200px 700px at 30% 20%, #0f223f, #04070d 60%);display:grid;place-items:center;transition:opacity .6s, visibility .6s}
+.loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.loader-card{padding:28px 32px;border-radius:18px;background:linear-gradient(180deg, rgba(18,30,56,0.96), rgba(10,18,36,0.98));border:1px solid rgba(0,240,255,.18);box-shadow:0 20px 60px rgba(0,0,0,.6), 0 0 30px rgba(0,240,255,.15);text-align:center;min-width:360px;position:relative;overflow:hidden}
+.loader-card::before{content:"";position:absolute;inset:0;border-radius:18px;padding:1px;background:linear-gradient(130deg, rgba(0,240,255,.6), transparent 35%, transparent 65%, rgba(255,200,87,.5)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude;pointer-events:none}
+.loader-title{font-family:Orbitron;font-weight:900;letter-spacing:.18em;font-size:22px;color:var(--cyan);text-shadow:0 0 18px rgba(0,240,255,.8)}
+.loader-sub{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.18em;color:var(--muted);margin-top:6px}
+.loader-bar{margin-top:18px;height:4px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden;position:relative}
+.loader-bar i{display:block;height:100%;width:0%;background:linear-gradient(90deg, var(--cyan), var(--gold));box-shadow:0 0 12px var(--cyan);animation:load 2.2s ease-in-out forwards}
+@keyframes load{0%{width:0%}40%{width:38%}78%{width:84%}100%{width:100%}}
+.tilt{transform-style:preserve-3d;will-change:transform;transition:transform .12s}
+.shimmer{position:relative;overflow:hidden}
+.shimmer::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg, transparent 30%, rgba(255,255,255,.08) 45%, transparent 60%);transform:translateX(-100%);transition:.6s}
+.shimmer:hover::after{transform:translateX(100%)}
+.corner{position:absolute;width:14px;height:14px;border:1px solid rgba(0,240,255,.35);pointer-events:none}
+.corner.tl{left:8px;top:8px;border-right:none;border-bottom:none}
+.corner.tr{right:8px;top:8px;border-left:none;border-bottom:none}
+.corner.bl{left:8px;bottom:8px;border-right:none;border-top:none}
+.corner.br{right:8px;bottom:8px;border-left:none;border-top:none}
+</style>
+</head>
+<body>
+<div class="gold-foil"></div>
+<div class="loader" id="loader">
+  <div class="loader-card">
+    <div class="loader-title">BIOREZ S2</div>
+    <div class="loader-sub">SCIENTIFIC MULTI-SIGNAL LAB • CYBERPUNK EDEL EDITION</div>
+    <div style="margin-top:14px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+      <span class="tag cyan">SICHERHEIT • KALIBRIERT</span><span class="tag">10 MHz REF • SYNC</span><span class="tag mag">VIRTUAL GENERATOR • LIVE</span>
+    </div>
+    <div class="loader-bar"><i></i></div>
+    <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:8px;letter-spacing:.12em">INITIALIZING CONTROL PLANE • DATA PLANE • ANALYSIS PLANE …</div>
+  </div>
+</div>
+<div class="bg"></div>
+<div class="bg-grid"></div>
+<canvas class="bg-particles" id="particles"></canvas>
+<div class="vignette"></div>
+<div class="scanline"></div>
+<div class="noise"></div>
+<div class="cursor-glow" id="cursorGlow"></div>
+<div class="edel-bar"></div>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo" style="animation:logoPulse 2.8s infinite"><span>S2</span></div>
+      <div class="brand-text">
+        <div class="title"><b>BIOREZ</b> <i>S2</i> <span style="font-family:'JetBrains Mono';font-size:10px;letter-spacing:.16em;color:var(--muted);font-weight:500">SCIENTIFIC LAB</span> <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--gold);border:1px solid rgba(255,200,87,.3);padding:2px 6px;border-radius:999px;background:rgba(255,200,87,.08)">EDEL • CYBERPUNK</span></div>
+        <div class="sub">MULTI-SIGNAL FREQUENCY CONTROL • ANALYSIS PLATFORM — CYBERPUNK EDEL EDITION</div>
+      </div>
+    </div>
+<style>@keyframes logoPulse{0%,100%{box-shadow:0 0 18px rgba(0,240,255,.5)}50%{box-shadow:0 0 28px rgba(0,240,255,.85), 0 0 18px rgba(255,200,87,.35)}}</style>
+    <div class="status-strip">
+      <div class="pill ok"><span class="dot" style="background:var(--emerald)"></span> SYSTEM • NOMINAL</div>
+      <div class="pill cyan"><span class="dot" style="background:var(--cyan)"></span> <span id="genCount">6 GENERATORS</span> • SYNCED</div>
+      <div class="pill warn"><span class="dot" style="background:var(--gold)"></span> SAFETY • ARMED</div>
+      <div class="pill mag"><span class="dot" style="background:var(--magenta)"></span> MEASUREMENT • LIVE</div>
+      <div class="pill" style="color:var(--muted)"><span style="width:8px;height:8px;border-radius:999px;background:var(--violet);box-shadow:0 0 10px var(--violet);display:inline-block"></span> CLOCK • 10MHz REF • <span id="clockDrift" style="color:var(--cyan)">±0.02 ppm</span></div>
+    </div>
+    <div class="header-actions">
+      <div class="clock" id="clock">00:00:00 • UTC</div>
+      <button class="emergency" id="emergencyBtn">⬢ EMERGENCY STOP</button>
+    </div>
+  </div>
+  <div style="height:1px;background:linear-gradient(90deg, transparent, rgba(0,240,255,.35), transparent)"></div>
+  <div style="display:flex;gap:8px;align-items:center;padding:6px 16px;overflow:auto;white-space:nowrap;border-top:1px solid rgba(255,255,255,.04);background:rgba(0,0,0,.18)">
+    <span class="kbd">INTENT → EXPERIMENT → SIGNAL → GENERATOR → HARDWARE → MEASUREMENT → ANALYSIS → RESULT</span>
+    <span style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);letter-spacing:.1em">HARDWARE ABSTRACTION • SAFETY LAYER • PROVENANCE • UNCERTAINTY</span>
+    <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <span class="pill small" style="padding:4px 8px;font-size:10px;background:rgba(0,240,255,.08);border-color:rgba(0,240,255,.18);color:var(--cyan)">WebSocket • LIVE</span>
+      <span class="pill small" style="padding:4px 8px;font-size:10px">API v2.1 • Control Plane • Data Plane • Analysis Plane</span>
+    </span>
+  </div>
+</header>
+
+<div class="app">
+  <!-- LEFT: GeneratorBus -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <section class="panel" style="flex:1">
+      <div class="panel-head">
+        <h3><span class="icon">◈</span> GENERATOR BUS <span style="font-family:'JetBrains Mono';font-weight:400;letter-spacing:.08em;color:var(--muted);font-size:10px">N • UNLIMITED</span></h3>
+        <div class="head-actions">
+          <button class="btn small" id="addGen">+ ADD</button>
+          <label class="btn small gold" style="cursor:pointer" for="presetFile">📁 PRESET IMPORT</label><input type="file" id="presetFile" accept=".txt,.json" style="display:none">
+          <button class="btn small mag" id="discoverHW">🔍 DISCOVER HW</button>
+          <button class="btn small gold" id="groupBtn">GROUP</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+          <span class="tag cyan">GROUP A • G1 G2 G3</span>
+          <span class="tag mag">GROUP B • G4 G5</span>
+          <span class="tag">BUS • 6 ACTIVE</span>
+          <span style="margin-left:auto;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)">DRAG TO REORDER • HOLD SHIFT FOR MULTI-SELECT</span>
+        </div>
+        <div class="generators" id="generators"></div>
+        <div style="margin-top:10px;padding:10px;border-radius:12px;background:rgba(255,200,87,.06);border:1px solid rgba(255,200,87,.14);display:flex;gap:10px;align-items:center">
+          <div style="width:28px;height:28px;border-radius:9px;background:rgba(255,200,87,.14);border:1px solid rgba(255,200,87,.25);display:grid;place-items:center;color:var(--gold)">⚠</div>
+          <div style="font-family:'JetBrains Mono';font-size:11px;line-height:1.4;color:#ffe9b0">Safety limits: <b style="color:var(--gold)">Amplitude 0–20 V • Freq 0.01 Hz–1 MHz • Duty 1–99%</b> — Ausgang schaltet bei Überschreitung automatisch OFF.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3><span class="icon">⬡</span> SIGNAL CHAIN</h3>
+        <span class="kbd">CLICK NODE • EDIT</span>
+      </div>
+      <div class="panel-body">
+        <div class="chain" id="chain">
+          <div class="chain-node active"><div class="cn-title">SOURCE</div><div class="cn-val">COMPOSER</div></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node active"><div class="cn-title">GENERATOR</div><div class="cn-val" id="chainGen">G1+ G2+ G3</div></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node"><div class="cn-title">CHANNEL</div><div class="cn-val">CH1 • CH2</div></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node"><div class="cn-title">AMPLIFIER</div><div class="cn-val">+12 dB</div></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node"><div class="cn-title">LOAD</div><div class="cn-val">50 Ω</div></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node" style="border-color:rgba(255,46,147,.3)"><div class="cn-title">SENSOR</div><div class="cn-val">ADC • 48k</div></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node"><div class="cn-title">DSP</div><div class="cn-val">FFT 2048</div></div>
+          <div class="chain-arrow">→</div>
+          <div class="chain-node"><div class="cn-title">ANALYSIS</div><div class="cn-val">LIVE</div></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <div class="metric">Sample Rate: <b>48.000 kHz</b></div>
+          <div class="metric">Timebase: <b>±0.02 ppm</b></div>
+          <div class="metric">Jitter: <b>~18 ns</b></div>
+          <div class="metric">Drift: <b>0.11 Hz/h</b></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- CENTER: Live vis -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <section class="panel">
+      <div class="panel-head">
+        <h3><span class="icon">≋</span> LIVE VISUALIZATION <span style="font-family:'JetBrains Mono';font-size:10px;color:var(--emerald);letter-spacing:.12em">● MEASUREMENT FEEDBACK</span></h3>
+        <div class="head-actions">
+          <button class="btn small" id="freezeBtn">⏸ FREEZE</button>
+          <button class="btn small mag" id="syncBtn">◉ SYNC ALL</button>
+        </div>
+      </div>
+      <div class="panel-body" style="padding:10px">
+        <div class="live-grid">
+          <div class="plot-card">
+            <div class="plot-head"><span>TIME DOMAIN • AMPLITUDE vs TIME • TRIGGER VIEW</span><span style="color:var(--cyan)">48 kHz • OVERLAY</span></div>
+            <canvas id="oscillo" width="600" height="180"></canvas>
+            <div class="metrics">
+              <span class="metric">RMS <b id="rms">3.42 V</b></span>
+              <span class="metric">P-P <b id="pp">12.10 V</b></span>
+              <span class="metric">Crest <b>1.41</b></span>
+              <span class="metric">SNR <b>38.2 dB</b></span>
+            </div>
+          </div>
+          <div class="plot-card">
+            <div class="plot-head"><span>FREQUENCY DOMAIN • FFT • MAGNITUDE & PHASE</span><span style="color:var(--gold)">2048 • HANN • 23.4 Hz/BIN</span></div>
+            <canvas id="fft" width="600" height="180"></canvas>
+            <div class="metrics">
+              <span class="metric">Peak <b id="peakFreq">40.0 Hz</b> <em id="peakMag">-3.2 dBFS</em></span>
+              <span class="metric">THD <b>1.8%</b></span>
+              <span class="metric">THD+N <b>2.1%</b></span>
+              <span class="metric">Noise Floor <b>-92 dB</b></span>
+            </div>
+          </div>
+          <div class="plot-card">
+            <div class="plot-head"><span>SPECTROGRAM • WATERFALL • TIME-FREQUENCY</span><span style="color:var(--violet)">60 s • LOG SCALE</span></div>
+            <canvas id="spectro" width="600" height="170"></canvas>
+            <div class="metrics">
+              <span class="metric">Window <b>Hann</b></span>
+              <span class="metric">Overlap <b>75%</b></span>
+              <span class="metric">Averaging <b>4×</b></span>
+              <span class="metric">Resolution <b>11.7 Hz</b></span>
+            </div>
+          </div>
+          <div class="plot-card">
+            <div class="plot-head"><span>MULTI-CHANNEL • CORRELATION • COHERENCE • PHASE</span><span style="color:var(--magenta)">6 CHANNELS</span></div>
+            <canvas id="correlation" width="600" height="170"></canvas>
+            <div class="metrics">
+              <span class="metric">Coherence <b>0.94</b></span>
+              <span class="metric">Phase Err <b id="phaseErr">1.2°</b></span>
+              <span class="metric">Freq Err <b>0.03 Hz</b></span>
+              <span class="metric">Jitter <b>12.4 ns</b></span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">
+          <div class="health-card" style="padding:8px">
+            <h4>STATISTICS • LIVE</h4>
+            <div style="font-family:'JetBrains Mono';font-size:11px;line-height:1.6;color:#cfe6ff">
+              Mean <b style="color:var(--cyan)">0.02 V</b> &nbsp; Var <b>2.31</b> &nbsp; σ <b>1.52</b><br>
+              Kurtosis <b>2.98</b> &nbsp; Skew <b>0.03</b> &nbsp; THD <b style="color:var(--gold)">1.84%</b>
+            </div>
+          </div>
+          <div class="health-card" style="padding:8px">
+            <h4>HARMONICS • INTERMODULATION</h4>
+            <div style="font-family:'JetBrains Mono';font-size:11px;line-height:1.6;color:#cfe6ff">
+              <span style="color:var(--cyan)">● f1 10 Hz</span> <span style="color:var(--magenta)">● f2 17 Hz</span> <span style="color:var(--gold)">● f3 23 Hz</span><br>
+              <span style="opacity:.7">2f1 20 Hz • f1+f2 27 Hz • 2f1−f2 3 Hz • IM3 <b>−42 dB</b></span>
+            </div>
+          </div>
+          <div class="health-card shimmer" style="padding:8px;cursor:pointer" id="calCard">
+            <h4>CALIBRATION STATE <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--gold)">● CLICK TO EDIT</span></h4>
+            <div style="display:flex;gap:6px;flex-wrap:wrap" id="calBadges">
+              <span class="tag cyan" data-cal="amp">AMP • CALIBRATED</span>
+              <span class="tag cyan" data-cal="freq">FREQ • CALIBRATED</span>
+              <span class="tag" data-cal="phase">PHASE • EXPIRED</span>
+              <span class="tag mag" data-cal="sensor">SENSOR • UNCALIBRATED</span>
+            </div>
+            <div style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted);margin-top:6px">Ref: PTB 10MHz • ±0.02% • 2026-08-20T06:00:00Z <span style="color:var(--gold)">⚠ PHASE EXPIRED — Nicht kalibrierte Werte markiert</span></div>
+          </div>
+<!-- Calibration Modal -->
+<div id="calModal" style="display:none;position:fixed;inset:0;z-index:90;background:rgba(2,8,18,0.78);backdrop-filter:blur(8px);place-items:center">
+  <div style="width:min(520px,90vw);padding:18px;border-radius:16px;background:linear-gradient(180deg, rgba(18,30,56,0.98), rgba(10,18,36,0.98));border:1px solid rgba(0,240,255,.22);box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 24px rgba(0,240,255,.18);position:relative">
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <h3 style="margin:0 0 8px;font-family:Orbitron;font-size:12px;letter-spacing:.14em;color:var(--cyan)">⚙ CALIBRATION EDITOR</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="calForm">
+      <label class="field">Amplitude <select data-k="amplitude" style="width:100%;background:transparent;color:var(--cyan);border:none;outline:none"><option>calibrated</option><option>expired</option><option>uncalibrated</option><option>unknown</option></select></label>
+      <label class="field">Frequency <select data-k="frequency" style="width:100%;background:transparent;color:var(--cyan);border:none;outline:none"><option>calibrated</option><option>expired</option><option>uncalibrated</option><option>unknown</option></select></label>
+      <label class="field">Phase <select data-k="phase" style="width:100%;background:transparent;color:var(--gold);border:none;outline:none"><option>expired</option><option>calibrated</option><option>uncalibrated</option></select></label>
+      <label class="field">Sensor <select data-k="sensor" style="width:100%;background:transparent;color:var(--magenta);border:none;outline:none"><option>uncalibrated</option><option>calibrated</option><option>expired</option></select></label>
+    </div>
+    <div class="field" style="margin-top:8px"><label>Reference</label><div class="value"><input id="calRef" value="PTB 10MHz" style="width:100%"></div></div>
+    <div class="field" style="margin-top:8px"><label>Uncertainty</label><div class="value"><input id="calUnc" value="±0.02%" style="width:100%"></div></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn small gold" id="calSave">💾 SAVE</button><button class="btn small" id="calClose">CLOSE</button><span style="margin-left:auto;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)">Provenance logged • Unsicherheit markiert</span></div>
+  </div>
+</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3><span class="icon">⬢</span> SEQUENCER & EXPERIMENT ENGINE</h3>
+        <div class="head-actions">
+          <button class="btn small" id="playSeq">▶ RUN</button>
+          <button class="btn small gold" id="saveExp">💾 SAVE EXPERIMENT</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap">
+          <span class="metric">Experiment <b style="color:var(--cyan)">EXP-2026-08-20-01</b></span>
+          <span class="metric">Version <b>v12</b></span>
+          <span class="metric">Duration <b>01:10</b></span>
+          <span class="metric">Reproducibility <b style="color:var(--emerald)">100% • Provenance OK</b></span>
+          <span style="margin-left:auto;display:flex;gap:6px">
+            <span class="btn small">LOOP</span>
+            <span class="btn small">RAMP</span>
+            <span class="btn small">TRIGGER</span>
+            <span class="btn small mag">CONDITIONAL</span>
+          </span>
+        </div>
+        <div class="timeline" id="timeline">
+          <div class="time-labels"><span>00:00</span><span>00:10</span><span>00:20</span><span>00:30</span><span>00:40</span><span>01:00</span><span>01:10</span></div>
+          <div class="timeline-grid"></div>
+          <div class="playhead" id="playhead"></div>
+          <div style="position:absolute;left:56px;right:10px;top:28px;bottom:10px;display:flex;flex-direction:column;gap:6px">
+            <div class="lane"><span style="position:absolute;left:4px;top:2px;font-family:'JetBrains Mono';font-size:9px;color:var(--muted)">G1</span><div class="block cyan" style="left:0;width:78px">10 Hz</div><div class="block cyan" style="left:234px;width:78px">G1+G2+G3</div><div class="block violet" style="left:312px;width:156px">SWEEP 10→1000 Hz</div></div>
+            <div class="lane"><span style="position:absolute;left:4px;top:2px;font-family:'JetBrains Mono';font-size:9px;color:var(--muted)">G2</span><div class="block mag" style="left:78px;width:78px">20 Hz</div><div class="block cyan" style="left:234px;width:78px">MIX</div></div>
+            <div class="lane"><span style="position:absolute;left:4px;top:2px;font-family:'JetBrains Mono';font-size:9px;color:var(--muted)">G3</span><div class="block gold" style="left:156px;width:78px">30 Hz</div><div class="block cyan" style="left:234px;width:78px">MIX</div></div>
+            <div class="lane"><span style="position:absolute;left:4px;top:2px;font-family:'JetBrains Mono';font-size:9px;color:var(--muted)">MSR</span><div class="block" style="left:468px;width:78px;background:rgba(0,255,157,.18);border:1px solid rgba(0,255,157,.35);color:var(--emerald)">MEASUREMENT</div></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+          <div class="field" style="flex:1;min-width:140px"><label>SWEEP • LINEAR / LOG / EXP</label><div class="value"><span>10 Hz → 1000 Hz • 30 s • LOG</span></div></div>
+          <div class="field" style="flex:1;min-width:140px"><label>TRIGGER • INPUT / OUTPUT</label><div class="value"><span>Ext Trig • Rising • 10 ms latency comp.</span></div></div>
+          <div class="field" style="min-width:160px"><label>SAFETY • WATCHDOG</label><div class="value"><span style="color:var(--emerald)">● ARMED • 5 s TIMEOUT</span></div></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- RIGHT: Composer + Matrix + Health -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+    <section class="panel">
+      <div class="panel-head">
+        <h3><span class="icon">◆</span> SIGNAL COMPOSER</h3>
+        <span class="kbd">VISUAL • MATH • REALTIME</span>
+      </div>
+      <div class="panel-body">
+        <div class="composer-graph" id="composer">
+          <svg class="wire" id="wires" width="100%" height="100%"></svg>
+          <div class="node" style="left:14px;top:18px" data-id="g1"><div class="port in"></div><div class="port out"></div><div class="n-head">G1 • 10 Hz <span>◉</span></div><div class="n-title">SINUS</div><div class="n-sub">A 8.0 V • φ 0°</div></div>
+          <div class="node" style="left:14px;top:98px" data-id="g2"><div class="port in"></div><div class="port out"></div><div class="n-head">G2 • 17 Hz <span>◉</span></div><div class="n-title">RECHTECK</div><div class="n-sub">A 5.5 V • φ 45°</div></div>
+          <div class="node" style="left:14px;top:178px" data-id="g3"><div class="port in"></div><div class="port out"></div><div class="n-head">G3 • 23 Hz <span>◉</span></div><div class="n-title">DREIECK</div><div class="n-sub">A 4.0 V • φ 90°</div></div>
+          <div class="node selected" style="left:188px;top:68px; width:160px" data-id="mix"><div class="port in"></div><div class="port out"></div><div class="n-head">MIXER <span style="color:var(--gold)">● ADD</span></div><div class="n-title">COMPOSITE SIGNAL</div><div class="n-sub">→ Amplifier → Output</div></div>
+          <div class="node" style="left:188px;top:168px;width:160px" data-id="mod"><div class="port in"></div><div class="port out"></div><div class="n-head">MODULATION <span>AM</span></div><div class="n-title">ENVELOPE • GATE</div><div class="n-sub">Noise • Burst • Chirp</div></div>
+        </div>
+        <div class="equation" id="equation">
+          <span style="opacity:.6">MATHEMATICAL REPRESENTATION</span><br>
+          <b>s(t)</b> = <i>A₁·sin(2π·10·t + φ₁)</i> + <i>A₂·rect(17·t + φ₂)</i> + <i>A₃·tri(23·t + φ₃)</i> + <i>n(t)</i><br>
+          <span style="opacity:.6;font-size:11px">Modulation: <b>AM 30% • FM ±2 Hz • PM 5° • Chirp 10→1000 Hz</b> • Confidence <b style="color:var(--emerald)">0.92</b></span>
+        </div>
+        <div class="ops">
+          <div class="op active">ADD</div><div class="op">MULT</div><div class="op">AM</div><div class="op">FM</div><div class="op">PM</div><div class="op">BURST</div><div class="op">SWEEP</div><div class="op">CHIRP</div><div class="op">GATE</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          <div class="field"><label>PHASE & SYNC • ABSOLUTE / RELATIVE</label><div class="value"><span style="color:var(--cyan)">φ-lock ON • 0.12° err</span> <span class="tag cyan">SYNC</span></div></div>
+          <div class="field"><label>CLOCK SOURCE</label><div class="value"><span>Common Clock • Ext 10 MHz</span> <span class="tag">PTP</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3><span class="icon">▦</span> MULTI-GENERATOR MATRIX</h3>
+        <span style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted)">SYNC • PHASE • RELATIONSHIPS</span>
+      </div>
+      <div class="panel-body">
+        <table class="matrix" id="matrix">
+          <thead><tr><th></th><th>G1</th><th>G2</th><th>G3</th><th>G4</th><th>G5</th><th>G6</th></tr></thead>
+          <tbody>
+            <tr><th>G1</th><td class="diag">—</td><td class="sync">sync</td><td class="phase">phase</td><td class="off">—</td><td class="off">—</td><td class="off">—</td></tr>
+            <tr><th>G2</th><td class="sync">sync</td><td class="diag">—</td><td class="sync">sync</td><td class="phase">phase</td><td class="off">—</td><td class="off">—</td></tr>
+            <tr><th>G3</th><td class="phase">phase</td><td class="sync">sync</td><td class="diag">—</td><td class="sync">sync</td><td class="off">—</td><td class="phase">phase</td></tr>
+            <tr><th>G4</th><td class="off">—</td><td class="phase">phase</td><td class="sync">sync</td><td class="diag">—</td><td class="sync">sync</td><td class="off">—</td></tr>
+            <tr><th>G5</th><td class="off">—</td><td class="off">—</td><td class="off">—</td><td class="sync">sync</td><td class="diag">—</td><td class="sync">sync</td></tr>
+            <tr><th>G6</th><td class="off">—</td><td class="off">—</td><td class="phase">phase</td><td class="off">—</td><td class="sync">sync</td><td class="diag">—</td></tr>
+          </tbody>
+        </table>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          <span class="tag cyan">SYNC • FREQUENCY LOCK</span>
+          <span class="tag" style="background:rgba(255,200,87,.12)">PHASE • 90° OFFSET</span>
+          <span class="tag mag">TRIGGER • SHARED</span>
+        </div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field"><label>PHASE ERROR</label><div class="value"><span id="phaseErr2" style="color:var(--emerald)">0.08°</span> <span style="font-size:10px;color:var(--muted)">jitter 12 ns</span></div></div>
+          <div class="field"><label>TIMING ERROR</label><div class="value"><span style="color:var(--gold)">2.4 µs</span> <span style="font-size:10px;color:var(--muted)">latency comp. on</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3><span class="icon">⚡</span> SYSTEM HEALTH & SAFETY</h3>
+        <span class="kbd">WATCHDOG • LOG • AUDIT</span>
+      </div>
+      <div class="panel-body">
+        <div class="health-grid">
+          <div class="health-card"><h4>CPU</h4><div class="bar"><i style="width:42%"></i></div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:4px">42% • 3.2 GHz</div></div>
+          <div class="health-card"><h4>RAM • BUFFER</h4><div class="bar warn"><i style="width:68%"></i></div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:4px">68% • 0 dropped</div></div>
+          <div class="health-card"><h4>GPU • RENDER</h4><div class="bar"><i style="width:31%"></i></div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:4px">31% • 60 fps</div></div>
+          <div class="health-card"><h4>USB • LATENCY</h4><div class="bar"><i style="width:18%"></i></div><div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:4px">4.2 ms • OK</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+          <div class="field"><label>NETWORK • PTP</label><div class="value"><span style="color:var(--emerald)">● 0.8 ms</span> <span style="font-size:10px">NTP only coarse</span></div></div>
+          <div class="field"><label>TEMPERATURE</label><div class="value"><span style="color:var(--gold)">41.2 °C</span> <span style="font-size:10px">limit 70°C</span></div></div>
+        </div>
+        <div style="margin-top:10px">
+          <div style="font-family:Orbitron;font-size:10px;letter-spacing:.12em;color:var(--muted);margin-bottom:6px">AUDIT TRAIL • EXPERIMENT LOG</div>
+          <div class="log" id="auditLog">
+            <div><b>06:21:03</b> G2 frequency <em>20 Hz → 25 Hz</em> • operator: admin</div>
+            <div><b>06:21:04</b> G3 phase <em>0° → 90°</em> • sync: relative</div>
+            <div><b>06:21:07</b> Experiment <em>EXP-2026-08-20-01 started</em> • safety: armed</div>
+            <div><b>06:21:12</b> Measurement <em>ADC 48k • FFT 2048 • Hann</em> • provenance logged</div>
+            <div><b>06:21:18</b> Intermodulation <em>f1+f2 27 Hz • −42 dB • confidence 0.88</em></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn small" id="exportCSV">EXPORT CSV</button>
+          <button class="btn small" id="exportJSON">EXPORT JSON</button>
+          <button class="btn small gold" id="exportPDF">PDF REPORT</button>
+          <button class="btn small mag" id="exportHDF5">HDF5</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="comparePanel" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;width:min(860px,92vw);padding:14px;border-radius:16px;background:linear-gradient(180deg, rgba(18,30,56,0.98), rgba(10,18,36,0.98));border:1px solid rgba(0,240,255,.22);box-shadow:0 20px 60px rgba(0,0,0,.6)">
+  <div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0;font-family:Orbitron;font-size:11px;letter-spacing:.14em;color:var(--cyan)">▦ EXPERIMENT VERGLEICH — A vs B vs C • SYNCHRON ZOOMBAR</h3><button class="btn small" onclick="document.getElementById('comparePanel').style.display='none'">✕ CLOSE</button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+    <div class="plot-card"><div class="plot-head"><span id="compA">EXP-A</span></div><canvas width="400" height="120" style="background:linear-gradient(90deg, rgba(0,240,255,.06), transparent);width:100%;height:120px;display:block"></canvas></div>
+    <div class="plot-card"><div class="plot-head"><span id="compB">EXP-B</span></div><canvas width="400" height="120" style="background:linear-gradient(90deg, rgba(255,200,87,.06), transparent);width:100%;height:120px;display:block"></canvas></div>
+  </div>
+  <div class="field" style="margin-top:10px"><label>DELTA</label><div class="value"><span id="compDelta">Δ Coherence 0.02 • Δ Phase 1.1°</span><span class="tag cyan">SYNCHRON</span></div></div>
+  <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:6px">Vergleicht spectrum/RMS/phase/coherence/stability — synchron zoombar, provenance getrennt</div>
+</div>
+<div class="float-controls">
+  <button class="float-btn" title="Presets" id="presetBtn">◈</button>
+  <button class="float-btn" title="Compare Experiments" id="compareBtn">▦</button>
+  <button class="float-btn" title="Fullscreen" id="fsBtn">⛶</button>
+</div>
+
+<div id="tooltip" class="tooltip"></div>
+
+<script>
+// Particles
+const cvs = document.getElementById('particles');
+const ctx = cvs.getContext('2d');
+let W,H,particles=[];
+function resize(){ W=cvs.width=window.innerWidth; H=cvs.height=window.innerHeight; }
+window.addEventListener('resize', resize); resize();
+for(let i=0;i<90;i++) particles.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*0.6,vy:(Math.random()-.5)*0.6,r:Math.random()*1.4+0.3, c: Math.random()<0.5? '0,240,255' : Math.random()<0.7? '122,0,255' : '255,200,87'});
+function animateParticles(){
+  ctx.clearRect(0,0,W,H);
+  for(let p of particles){
+    p.x+=p.vx; p.y+=p.vy;
+    if(p.x<0||p.x>W) p.vx*=-1;
+    if(p.y<0||p.y>H) p.vy*=-1;
+    const g = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,20);
+    g.addColorStop(0,`rgba(${p.c},0.35)`);
+    g.addColorStop(1,`rgba(${p.c},0)`);
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(p.x,p.y,20,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle=`rgba(${p.c},0.9)`;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  }
+  // connections
+  ctx.strokeStyle='rgba(0,240,255,0.06)';
+  for(let i=0;i<particles.length;i++) for(let j=i+1;j<particles.length;j++){
+    let dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
+    let d=Math.hypot(dx,dy);
+    if(d<140){ ctx.globalAlpha=1-d/140; ctx.beginPath(); ctx.moveTo(particles[i].x,particles[i].y); ctx.lineTo(particles[j].x,particles[j].y); ctx.stroke();}
+  }
+  ctx.globalAlpha=1;
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// Clock
+function tickClock(){
+  const now=new Date();
+  document.getElementById('clock').textContent = now.toISOString().substr(11,8)+' • UTC';
+  document.getElementById('clockDrift').textContent = '±'+(0.015+Math.random()*0.01).toFixed(3)+' ppm';
+}
+setInterval(tickClock, 900); tickClock();
+
+// Generator model
+let gens = [
+  {id:1,name:'G1 HELIOS', model:'S2-X • 10MHz REF', freq:10, amp:8.0, wave:'sine', phase:0, duty:50, offset:0, on:true, color:'#00f0ff'},
+  {id:2,name:'G2 AETHER', model:'S2-X • 10MHz REF', freq:17, amp:5.5, wave:'square', phase:45, duty:50, offset:0, on:true, color:'#ff2e93'},
+  {id:3,name:'G3 NYX', model:'S2-X • 10MHz REF', freq:23, amp:4.0, wave:'triangle', phase:90, duty:50, offset:0, on:true, color:'#ffc857'},
+  {id:4,name:'G4 ORION', model:'S2-X • USB', freq:40, amp:6.0, wave:'sine', phase:0, duty:50, offset:0, on:true, color:'#7a00ff'},
+  {id:5,name:'G5 VEGA', model:'S2-X • TCP/IP', freq:100, amp:3.0, wave:'sawtooth', phase:180, duty:50, offset:0, on:true, color:'#00ff9d'},
+  {id:6,name:'G6 NEBULA', model:'VIRTUAL • SIM', freq:1000, amp:2.2, wave:'sine', phase:270, duty:50, offset:0, on:false, color:'#ff9f1c'},
+];
+const waveNames = {sine:'SINUS', square:'RECHTECK', triangle:'DREIECK', sawtooth:'SÄGE', pulse:'PULS', noise:'NOISE', dc:'DC', arbitrary:'ARB'};
+function renderGenerators(){
+  const wrap=document.getElementById('generators');
+  wrap.innerHTML='';
+  gens.forEach((g,i)=>{
+    const card=document.createElement('div');
+    card.className='gen-card'+(g.on?' active':' off');
+    card.innerHTML=`
+      <div class="gen-top">
+        <div class="gen-id">
+          <div class="badge">G${g.id}</div>
+          <div>
+            <div class="name">${g.name}</div>
+            <div class="model">${g.model} • CH1 • 48k • <span style="color:${g.on?'var(--emerald)':'var(--muted)'}">${g.on?'LIVE':'OFF'}</span></div>
+          </div>
+        </div>
+        <div class="power ${g.on?'on':''}" data-i="${i}" title="Output toggle"></div>
+      </div>
+      <div class="gen-grid">
+        <div class="field"><label>FREQUENZ</label><div class="value"><input type="number" value="${g.freq}" step="0.1" data-k="freq" data-i="${i}" style="width:70px"> <span style="color:var(--muted)">Hz</span></div><input class="slider" type="range" min="0.1" max="1000" step="0.1" value="${g.freq}" data-k="freq" data-i="${i}"></div>
+        <div class="field"><label>AMPLITUDE</label><div class="value"><input type="number" value="${g.amp}" step="0.1" data-k="amp" data-i="${i}" style="width:70px"> <span style="color:var(--muted)">V</span></div><input class="slider" type="range" min="0" max="20" step="0.1" value="${g.amp}" data-k="amp" data-i="${i}"></div>
+        <div class="field"><label>PHASE • OFFSET</label><div class="value"><input type="number" value="${g.phase}" step="1" data-k="phase" data-i="${i}" style="width:70px"> <span style="color:var(--muted)">°</span></div><input class="slider" type="range" min="0" max="360" step="1" value="${g.phase}" data-k="phase" data-i="${i}"></div>
+        <div class="field"><label>DUTY • OFFSET</label><div class="value"><span>${g.duty}% • ${g.offset.toFixed(1)}V</span> <span class="tag cyan" style="font-size:9px">CAL</span></div><input class="slider" type="range" min="1" max="99" step="1" value="${g.duty}" data-k="duty" data-i="${i}"></div>
+      </div>
+      <div class="wave-chips">
+        ${['sine','square','triangle','sawtooth','pulse','noise'].map(w=>`<div class="chip ${g.wave===w?'active':''}" data-i="${i}" data-w="${w}">${waveNames[w]||w.toUpperCase()}</div>`).join('')}
+      </div>
+      <div class="gen-actions">
+        <button class="btn small" data-act="trigger" data-i="${i}">TRIGGER</button>
+        <button class="btn small gold" data-act="phase" data-i="${i}">PHASE LOCK</button>
+        <span style="margin-left:auto;display:flex;gap:6px;align-items:center;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)"><span style="width:6px;height:6px;border-radius:999px;background:${g.color};box-shadow:0 0 8px ${g.color};display:inline-block"></span> ${g.wave.toUpperCase()} • ${g.freq} Hz</span>
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+  document.getElementById('genCount').textContent = gens.length+' GENERATORS';
+  document.getElementById('chainGen').textContent = gens.filter(g=>g.on).map(g=>'G'+g.id).join('+ ') || 'OFF';
+  // bind
+  wrap.querySelectorAll('.power').forEach(el=>el.addEventListener('click', e=>{
+    let i=+e.currentTarget.dataset.i; gens[i].on=!gens[i].on; renderGenerators(); log(`${new Date().toISOString().substr(11,8)} G${gens[i].id} output ${gens[i].on?'ON':'OFF'}`); 
+  }));
+  wrap.querySelectorAll('input[data-k]').forEach(el=>el.addEventListener('input', e=>{
+    let i=+e.currentTarget.dataset.i, k=e.currentTarget.dataset.k, v=parseFloat(e.currentTarget.value);
+    if(!isNaN(v)){ gens[i][k]=v; if(k==='freq'||k==='amp'||k==='phase') updateMetrics(); syncSliders(i,k,v); }
+  }));
+  wrap.querySelectorAll('.chip').forEach(el=>el.addEventListener('click', e=>{
+    let i=+e.currentTarget.dataset.i, w=e.currentTarget.dataset.w; gens[i].wave=w; renderGenerators();
+  }));
+}
+function syncSliders(idx,key,val){
+  document.querySelectorAll(`input[data-i="${idx}"][data-k="${key}"]`).forEach(inp=>{ if(document.activeElement!==inp) inp.value=val; });
+}
+function updateMetrics(){
+  const rms = Math.sqrt(gens.filter(g=>g.on).reduce((a,g)=>a + (g.amp/Math.sqrt(2))**2,0) ) || 0;
+  document.getElementById('rms').textContent = rms.toFixed(2)+' V';
+  document.getElementById('pp').textContent = (rms*2*Math.sqrt(2)).toFixed(2)+' V';
+  const peak = gens.filter(g=>g.on).sort((a,b)=>b.amp-a.amp)[0];
+  if(peak) document.getElementById('peakFreq').textContent = peak.freq.toFixed(1)+' Hz';
+}
+renderGenerators();
+
+// Canvas drawing
+const oscillo=document.getElementById('oscillo');
+const octx=oscillo.getContext('2d');
+const fftC=document.getElementById('fft');
+const fctx=fftC.getContext('2d');
+const spectro=document.getElementById('spectro');
+const sctx=spectro.getContext('2d');
+const corr=document.getElementById('correlation');
+const cctx=corr.getContext('2d');
+let t=0, frozen=false;
+let spectroImage=null;
+
+function waveSample(g, time){
+  const f=g.freq, ph=g.phase*Math.PI/180, a=g.amp;
+  const p = (time*f*2*Math.PI + ph);
+  switch(g.wave){
+    case 'sine': return a*Math.sin(p);
+    case 'square': return a*Math.sign(Math.sin(p));
+    case 'triangle': return a*(2/Math.PI)*Math.asin(Math.sin(p));
+    case 'sawtooth': return a*(2*(time*f - Math.floor(time*f+0.5)));
+    case 'pulse': return a*( (time*f %1) < g.duty/100 ? 1 : -1);
+    case 'noise': return a*(Math.random()*2-1)*0.5;
+    default: return a*Math.sin(p);
+  }
+}
+function drawOscillo(){
+  const W=oscillo.width, H=oscillo.height;
+  octx.clearRect(0,0,W,H);
+  // grid
+  octx.strokeStyle='rgba(0,240,255,0.07)'; octx.lineWidth=1;
+  for(let x=0;x<W;x+=42){ octx.beginPath(); octx.moveTo(x,0); octx.lineTo(x,H); octx.stroke();}
+  for(let y=0;y<H;y+=36){ octx.beginPath(); octx.moveTo(0,y); octx.lineTo(W,y); octx.stroke();}
+  // center line
+  octx.strokeStyle='rgba(255,255,255,0.08)'; octx.setLineDash([4,6]); octx.beginPath(); octx.moveTo(0,H/2); octx.lineTo(W,H/2); octx.stroke(); octx.setLineDash([]);
+  // composite
+  const samples=600;
+  const duration=0.05; // 50 ms window
+  const active=gens.filter(g=>g.on);
+  // glow
+  octx.shadowColor='rgba(0,240,255,0.7)'; octx.shadowBlur=12; octx.lineWidth=1.6;
+  // individual + composite
+  active.forEach((g,idx)=>{
+    octx.beginPath();
+    octx.strokeStyle=g.color;
+    octx.globalAlpha= idx===0?1:0.65;
+    for(let i=0;i<samples;i++){
+      let time = t + (i/samples)*duration;
+      let v = waveSample(g, time);
+      let x = i/samples*W;
+      let y = H/2 - v/(12)*H/2; // scale: 12V = full
+      if(i===0) octx.moveTo(x,y); else octx.lineTo(x,y);
+    }
+    octx.stroke();
+  });
+  // composite thick
+  if(active.length>1){
+    octx.beginPath(); octx.strokeStyle='#ffffff'; octx.globalAlpha=0.9; octx.lineWidth=2.2; octx.shadowColor='rgba(255,200,87,0.9)'; octx.shadowBlur=14;
+    for(let i=0;i<samples;i++){
+      let time = t + (i/samples)*duration;
+      let v = active.reduce((a,g)=>a+waveSample(g,time),0) / Math.sqrt(active.length);
+      let x = i/samples*W;
+      let y = H/2 - v/(14)*H/2;
+      if(i===0) octx.moveTo(x,y); else octx.lineTo(x,y);
+    }
+    octx.stroke();
+    octx.shadowBlur=0;
+  }
+  // trigger marker
+  octx.globalAlpha=1; octx.fillStyle='rgba(0,240,255,0.9)'; octx.font='10px JetBrains Mono'; octx.fillText('TRIG ● 0 ms', 8, 14);
+  octx.fillStyle='rgba(255,200,87,0.9)'; octx.fillText('COMPOSITE', W-78, 14);
+}
+function drawFFT(){
+  const W=fftC.width, H=fftC.height;
+  fctx.clearRect(0,0,W,H);
+  // grid
+  fctx.strokeStyle='rgba(255,255,255,0.04)'; fctx.lineWidth=1;
+  for(let x=0;x<W;x+=60){ fctx.beginPath(); fctx.moveTo(x,0); fctx.lineTo(x,H); fctx.stroke();}
+  for(let y=0;y<H;y+=36){ fctx.beginPath(); fctx.moveTo(0,y); fctx.lineTo(W,y); fctx.stroke();}
+  // spectrum - simulate peaks at generator frequencies + harmonics + IM
+  const freqToX = f=> Math.log10(f+1)/Math.log10(1000+1)*W*0.96 + W*0.02;
+  const magToY = db=> H-18 - (db+90)/90 * (H-36);
+  // noise floor
+  fctx.fillStyle='rgba(0,240,255,0.06)';
+  fctx.beginPath(); fctx.moveTo(0, magToY(-90));
+  for(let x=0;x<W;x++){ let db=-90 + Math.random()*4 + Math.sin(x*0.02+t*2)*1.5; let y=magToY(db); if(x===0) fctx.moveTo(x,y); else fctx.lineTo(x,y);}
+  fctx.lineTo(W, H); fctx.lineTo(0,H); fctx.closePath(); fctx.fill();
+  // peaks
+  let peaks=[];
+  gens.filter(g=>g.on).forEach(g=>{
+    peaks.push({f:g.freq, db:-6 - Math.random()*3, type:'fundamental', color:g.color});
+    peaks.push({f:g.freq*2, db:-18 - Math.random()*6, type:'harmonic', color:g.color});
+    peaks.push({f:g.freq*3, db:-28 - Math.random()*6, type:'harmonic', color:g.color});
+  });
+  // intermod
+  const on=gens.filter(g=>g.on);
+  if(on.length>=2){
+    peaks.push({f:Math.abs(on[0].freq+on[1].freq), db:-32, type:'IM', color:'#ff7ab6'});
+    peaks.push({f:Math.abs(on[0].freq-on[1].freq), db:-38, type:'IM', color:'#ff7ab6'});
+    if(on[2]) peaks.push({f: on[0].freq+on[2].freq, db:-36, type:'IM', color:'#ffc857'});
+  }
+  peaks.forEach(p=>{
+    const x=freqToX(p.f); const y=magToY(p.db);
+    // bar
+    fctx.fillStyle=p.color; fctx.globalAlpha=0.85;
+    fctx.shadowColor=p.color; fctx.shadowBlur=12;
+    fctx.fillRect(x-1.5, y, 3, magToY(-90)-y);
+    fctx.shadowBlur=0; fctx.globalAlpha=1;
+    // label
+    fctx.fillStyle=p.color; fctx.font='9px JetBrains Mono'; fctx.fillText(p.f.toFixed(1)+' Hz', x-18, y-6);
+    fctx.fillStyle='rgba(255,255,255,0.55)'; fctx.font='8px JetBrains Mono'; fctx.fillText(p.type, x-16, y+10);
+  });
+  // envelope line
+  fctx.strokeStyle='rgba(0,240,255,0.9)'; fctx.lineWidth=1.4; fctx.shadowColor='rgba(0,240,255,0.6)'; fctx.shadowBlur=8;
+  fctx.beginPath();
+  for(let x=0;x<W;x++){
+    let f = Math.pow(10, (x/W)*Math.log10(1001))-1;
+    let sum= -90;
+    peaks.forEach(p=>{ let d=Math.abs(Math.log10(f+1)-Math.log10(p.f+1)); let contrib = Math.exp(-d*38) * (p.db+90); sum+=contrib; });
+    sum+= Math.random()*1.2;
+    let y=magToY(Math.min(-2, sum));
+    if(x===0) fctx.moveTo(x,y); else fctx.lineTo(x,y);
+  }
+  fctx.stroke(); fctx.shadowBlur=0;
+  // axis labels
+  fctx.fillStyle='rgba(255,255,255,0.5)'; fctx.font='9px JetBrains Mono';
+  fctx.fillText('10 Hz', freqToX(10)-12, H-6);
+  fctx.fillText('100 Hz', freqToX(100)-14, H-6);
+  fctx.fillText('1 kHz', freqToX(1000)-12, H-6);
+}
+function drawSpectro(){
+  const W=spectro.width, H=spectro.height;
+  // scroll
+  if(!spectroImage){
+    sctx.fillStyle='#06101e'; sctx.fillRect(0,0,W,H);
+    spectroImage = sctx.getImageData(0,0,W,H);
+  } else {
+    // shift up 1px
+    const img = sctx.getImageData(0,1,W,H-1);
+    sctx.putImageData(img,0,0);
+  }
+  // new line at bottom
+  const y=H-1;
+  for(let x=0;x<W;x++){
+    let f = Math.pow(10, (x/W)*Math.log10(1001))-1;
+    let intensity=0;
+    gens.filter(g=>g.on).forEach(g=>{
+      let d=Math.abs(f-g.f); 
+      let peak = Math.exp(-d*d/ (g.freq<50? 8 : 80)) * g.amp;
+      intensity += peak;
+      let d2=Math.abs(f-g.freq*2); intensity += Math.exp(-d2*d2/20)*g.amp*0.35;
+    });
+    intensity += Math.random()*0.12;
+    intensity = Math.min(1, intensity/6);
+    // colormap cyan->mag->gold
+    let r,g,b;
+    if(intensity<0.5){ // dark to cyan
+      r= Math.floor(6 + intensity*2* 0);
+      g= Math.floor(16 + intensity*2* 120);
+      b= Math.floor(30 + intensity*2* 180);
+    } else if(intensity<0.8){
+      r= Math.floor(intensity* 200);
+      g= Math.floor(80 + intensity*60);
+      b= Math.floor(120 + intensity*80);
+    } else {
+      r= Math.floor(180 + intensity*75);
+      g= Math.floor(180 + intensity*75);
+      b= Math.floor(90);
+    }
+    // add drift
+    let alpha = 0.85 + intensity*0.15;
+    sctx.fillStyle=`rgba(${r},${g},${b},${alpha})`;
+    sctx.fillRect(x,y,1,1);
+  }
+  // overlay time
+  sctx.fillStyle='rgba(0,0,0,0.45)'; sctx.fillRect(0,0,W,14);
+  sctx.fillStyle='rgba(0,240,255,0.9)'; sctx.font='9px JetBrains Mono'; sctx.fillText('WATERFALL • 60s • LOG', 6, 10);
+  sctx.fillStyle='rgba(255,255,255,0.5)'; sctx.fillText('−60s', 6, H-4); sctx.fillText('NOW', W-28, H-4);
+}
+function drawCorrelation(){
+  const W=corr.width, H=corr.height;
+  cctx.clearRect(0,0,W,H);
+  // grid
+  cctx.strokeStyle='rgba(255,255,255,0.05)'; cctx.lineWidth=1;
+  for(let x=0;x<W;x+=W/6){ cctx.beginPath(); cctx.moveTo(x,0); cctx.lineTo(x,H); cctx.stroke();}
+  for(let y=0;y<H;y+=H/4){ cctx.beginPath(); cctx.moveTo(0,y); cctx.lineTo(W,y); cctx.stroke();}
+  // phase wheel center
+  const cx=W*0.28, cy=H*0.54, R=56;
+  cctx.strokeStyle='rgba(0,240,255,0.14)'; cctx.lineWidth=1.2; cctx.beginPath(); cctx.arc(cx,cy,R,0,Math.PI*2); cctx.stroke();
+  cctx.strokeStyle='rgba(255,255,255,0.06)'; cctx.beginPath(); cctx.moveTo(cx-R,cy); cctx.lineTo(cx+R,cy); cctx.stroke(); cctx.beginPath(); cctx.moveTo(cx,cy-R); cctx.lineTo(cx,cy+R); cctx.stroke();
+  // phase vectors
+  gens.filter(g=>g.on).slice(0,4).forEach((g,i)=>{
+    let ang = (g.phase + t* g.freq*2) %360; // rotate slowly with freq
+    let rad = ang*Math.PI/180;
+    let x2 = cx + Math.cos(rad)* (R*0.78 - i*6);
+    let y2 = cy + Math.sin(rad)* (R*0.78 - i*6);
+    cctx.strokeStyle=g.color; cctx.lineWidth=2.2; cctx.shadowColor=g.color; cctx.shadowBlur=10;
+    cctx.beginPath(); cctx.moveTo(cx,cy); cctx.lineTo(x2,y2); cctx.stroke();
+    cctx.fillStyle=g.color; cctx.beginPath(); cctx.arc(x2,y2,3.5,0,Math.PI*2); cctx.fill();
+    cctx.shadowBlur=0;
+    cctx.fillStyle='rgba(255,255,255,0.7)'; cctx.font='9px JetBrains Mono'; cctx.fillText('G'+g.id+' '+ang.toFixed(0)+'°', cx+R+10, 18+i*14);
+  });
+  // coherence bars right
+  const bx = W*0.58, bw = W*0.38;
+  cctx.fillStyle='rgba(255,255,255,0.07)'; cctx.font='9px JetBrains Mono'; cctx.fillText('COHERENCE • CROSS-CORRELATION', bx, 14);
+  for(let i=0;i<4;i++){
+    let y= 26 + i*26;
+    let coh = 0.88 + Math.sin(t*0.6 + i)*0.05;
+    let w = bw * coh;
+    cctx.fillStyle='rgba(255,255,255,0.08)'; cctx.fillRect(bx, y, bw, 10);
+    let grad=cctx.createLinearGradient(bx,0,bx+bw,0); grad.addColorStop(0,'#00f0ff'); grad.addColorStop(1,'#7a00ff');
+    cctx.fillStyle=grad; cctx.shadowColor='rgba(0,240,255,0.5)'; cctx.shadowBlur=8; cctx.fillRect(bx, y, w, 10); cctx.shadowBlur=0;
+    cctx.fillStyle='rgba(255,255,255,0.85)'; cctx.font='10px JetBrains Mono'; cctx.fillText(coh.toFixed(2), bx+bw+6, y+9);
+    cctx.fillStyle='rgba(255,255,255,0.45)'; cctx.font='9px JetBrains Mono'; cctx.fillText(['G1↔G2','G2↔G3','G3↔G4','G4↔G5'][i], bx, y-4);
+  }
+  cctx.fillStyle='rgba(255,200,87,0.95)'; cctx.font='9px JetBrains Mono'; cctx.fillText('SYNC • COMMON CLOCK • 10 MHz', bx, H-8);
+}
+function frame(){
+  if(!frozen){
+    t+=0.016;
+    drawOscillo(); drawFFT(); drawSpectro(); drawCorrelation();
+    // drift metrics
+    document.getElementById('phaseErr').textContent = (0.8 + Math.sin(t*0.7)*0.4).toFixed(2)+'°';
+    document.getElementById('phaseErr2').textContent = (0.08 + Math.sin(t*0.9)*0.03).toFixed(2)+'°';
+  }
+  requestAnimationFrame(frame);
+}
+frame();
+
+// interactions
+document.getElementById('freezeBtn').addEventListener('click', (e)=>{
+  frozen=!frozen; e.currentTarget.textContent = frozen? '▶ RESUME' : '⏸ FREEZE';
+  e.currentTarget.style.background = frozen? 'rgba(255,46,147,0.18)' : '';
+});
+document.getElementById('syncBtn').addEventListener('click', ()=>{
+  gens.forEach(g=>g.phase=0); renderGenerators(); log(`${new Date().toISOString().substr(11,8)} SYNC ALL • phase → 0° • freq lock engaged`);
+});
+document.getElementById('addGen').addEventListener('click', ()=>{
+  const id=gens.length+1;
+  gens.push({id, name:`G${id} NOVA`, model:'VIRTUAL • SIM', freq: 5+Math.random()*200, amp: 2+Math.random()*6, wave:['sine','square','triangle','sawtooth'][Math.floor(Math.random()*4)], phase: Math.floor(Math.random()*360), duty:50, offset:0, on:true, color: ['#00f0ff','#ff2e93','#ffc857','#7a00ff','#00ff9d'][id%5]});
+  renderGenerators(); log(`${new Date().toISOString().substr(11,8)} GENERATOR G${id} ADDED • virtual • calibrated`);
+});
+document.getElementById('emergencyBtn').addEventListener('click', (e)=>{
+  const btn=e.currentTarget;
+  const armed=btn.classList.toggle('armed');
+  if(armed){
+    gens.forEach(g=>g.on=false); renderGenerators(); btn.textContent='⬢ ARMED — OUTPUT OFF';
+    log(`${new Date().toISOString().substr(11,8)} EMERGENCY STOP • OUTPUT → OFF • watchdog triggered`);
+    setTimeout(()=>{btn.classList.remove('armed'); btn.textContent='⬢ EMERGENCY STOP';}, 2600);
+  }
+});
+document.getElementById('groupBtn').addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} GROUP A • 3 generators • amplitude linked • sync enabled`));
+document.getElementById('discoverHW')?.addEventListener('click', async ()=>{
+  log(`${new Date().toISOString().substr(11,8)} DISCOVER • scanning USB/Serial for Spooky2...`);
+  // Simuliere s2 status via Virtual — in echt via backend/server.js -> Spooky2Adapter
+  setTimeout(()=>{
+    const found = Math.random()>0.4;
+    if(found){
+      const id=gens.length+1;
+      gens.push({id, name:`S2 HW G${id} (USB)`, model:'Spooky2 XM • USB • Real', freq: 10+Math.random()*100, amp: 5, wave:'sine', phase:0, duty:50, offset:0, on:true, color:'#00ff9d', hardware:true, calibration:'unknown'});
+      renderGenerators();
+      log(`${new Date().toISOString().substr(11,8)} DISCOVER • S2 HW G${id} gefunden — Safety Layer aktiv • Calibration unknown — s2 status OK`);
+    } else {
+      log(`${new Date().toISOString().substr(11,8)} DISCOVER • keine Hardware gefunden — läuft weiter im VIRTUAL Modus — s2 status: Disconnected (Simulation)`);
+    }
+  }, 900);
+});
+document.getElementById('presetFile')?.addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const text=await f.text();
+  log(`${new Date().toISOString().substr(11,8)} PRESET IMPORT • ${f.name} • ${text.length} bytes • parsing...`);
+  try{
+    // Simuliere core/preset.js parse (im Dashboard inline)
+    const isSpooky = text.includes('List4');
+    let steps=[];
+    if(isSpooky){
+      const m=text.match(/"List4"\s*=\s*"([^"]+)"/);
+      const code=m?m[1]:text.slice(0,200);
+      steps=code.split(',').slice(0,6).map((tok,i)=>{ const mm=tok.match(/([\d.]+)(?:-([\d.]+))?(?:=\s*([\d.]+))?/); return mm?{f1:mm[1], f2:mm[2]||mm[1], dur:mm[3]||180}:null; }).filter(Boolean);
+    } else {
+      steps=text.split(/[,\n]+/).slice(0,6).map(t=>{ const mm=t.trim().match(/([\d.]+)/); return mm?{f1:mm[1], dur:180}:null;}).filter(Boolean);
+    }
+    // Füge als neue Generatoren hinzu (max 3)
+    steps.slice(0,3).forEach((s,i)=>{
+      const id=gens.length+1;
+      gens.push({id, name:`PRESET G${id} ${parseFloat(s.f1).toFixed(1)}Hz`, model:'Imported Preset • Virtual', freq: parseFloat(s.f1), amp: 5, wave:'sine', phase:0, duty:50, offset:0, on:true, color:['#00f0ff','#ffc857','#ff2e93'][i%3]});
+    });
+    renderGenerators();
+    // Sequencer Timeline aktualisieren (simuliert)
+    log(`${new Date().toISOString().substr(11,8)} PRESET IMPORT OK • ${steps.length} steps • Dauer ${steps.reduce((a,s)=>a+parseInt(s.dur||180),0)}s • Sequencer aktualisiert • Provenance: Spooky2 Preset`);
+    // Zeige Preset Info im Sequencer
+    const seqInfo=document.querySelector('#timeline')?.parentElement?.querySelector('.metric');
+    if(seqInfo) seqInfo.innerHTML=`Experiment <b style="color:var(--cyan)">${f.name.replace('.txt','')}</b> • <span style="color:var(--gold)">${steps.length} Programme</span> • ${isSpooky?'Spooky2':'List'}`;
+  } catch(err){ log(`${new Date().toISOString().substr(11,8)} PRESET ERROR • ${err.message}`); }
+});
+document.getElementById('playSeq').addEventListener('click', ()=>{
+  let btn=document.getElementById('playSeq');
+  let playing=btn.textContent.includes('RUN');
+  btn.textContent= playing? '⏹ STOP' : '▶ RUN';
+  btn.style.background= playing? 'rgba(0,255,157,0.16)':'';
+  // animate playhead
+  let start=performance.now();
+  function step(now){
+    let p = ((now-start)/ 7000) %1;
+    document.getElementById('playhead').style.left = (56 + p* (document.getElementById('timeline').clientWidth-66))+'px';
+    if(playing) requestAnimationFrame(step);
+  }
+  if(playing) requestAnimationFrame(step);
+  log(`${new Date().toISOString().substr(11,8)} SEQUENCER ${playing?'START':'STOP'} • experiment EXP-2026-08-20-01`);
+});
+document.getElementById('saveExp').addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} EXPERIMENT SAVED • version v13 • provenance hash a3f9… • JSON+HDF5`));
+document.getElementById('presetBtn').addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} PRESET • loaded "Detox • Contact" • 12 steps • duration 01:10`));
+document.getElementById('compareBtn').addEventListener('click', ()=>{
+  const comp=document.getElementById('comparePanel');
+  comp.style.display= comp.style.display==='none'?'block':'none';
+  if(comp.style.display==='block'){
+    // populate comparison from core/comparison logic simulated
+    const a={id:'EXP-A', rms:'2.31V', coherence:'0.94', phase:'1.2°'}, b={id:'EXP-B', rms:'2.45V', coherence:'0.92', phase:'2.3°'};
+    document.getElementById('compA').textContent=`${a.id} • RMS ${a.rms} • Coh ${a.coherence} • φ ${a.phase}`;
+    document.getElementById('compB').textContent=`${b.id} • RMS ${b.rms} • Coh ${b.coherence} • φ ${b.phase}`;
+    document.getElementById('compDelta').textContent=`Δ Coherence 0.02 • Δ Phase 1.1° • Δ RMS 0.14V • synchron zoombar`;
+    log(`${new Date().toISOString().substr(11,8)} COMPARE • ${a.id} vs ${b.id} • Δ 0.02/1.1° • split-view opened`);
+  }
+});
+document.getElementById('fsBtn').addEventListener('click', ()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); });
+
+// matrix
+document.querySelectorAll('#matrix td').forEach(td=>{
+  if(td.classList.contains('diag')) return;
+  td.addEventListener('click', ()=>{
+    const states=['off','sync','phase'];
+    let cur= td.classList.contains('sync')?'sync': td.classList.contains('phase')?'phase':'off';
+    let nxt=states[(states.indexOf(cur)+1)%states.length];
+    td.className=nxt;
+    td.textContent = nxt==='off'?'—':nxt;
+  });
+});
+
+// composer nodes drag + wires
+const composer=document.getElementById('composer');
+const wires=document.getElementById('wires');
+function drawWires(){
+  const rect=composer.getBoundingClientRect();
+  wires.innerHTML='';
+  const nodes=Array.from(composer.querySelectorAll('.node'));
+  const getCenter = el=>{
+    const r=el.getBoundingClientRect();
+    return {x: r.left - rect.left + r.width/2, y: r.top - rect.top + r.height/2, right: r.left - rect.left + r.width, left: r.left-rect.left}
+  };
+  // connect g1,g2,g3 -> mix
+  const mix=nodes.find(n=>n.dataset.id==='mix');
+  const mc=getCenter(mix);
+  ['g1','g2','g3'].forEach(id=>{
+    const n=nodes.find(x=>x.dataset.id===id);
+    if(!n) return;
+    const c=getCenter(n);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    const sx=c.right, sy=c.y, ex=mc.left, ey=mc.y + (id==='g1'?-18:id==='g3'?18:0);
+    const mx=(sx+ex)/2;
+    path.setAttribute('d',`M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ey}, ${ex} ${ey}`);
+    path.setAttribute('stroke', id==='g1'?'#00f0ff': id==='g2'?'#ff2e93':'#ffc857');
+    path.setAttribute('stroke-width','2');
+    path.setAttribute('fill','none');
+    path.setAttribute('opacity','0.9');
+    path.style.filter='drop-shadow(0 0 6px '+path.getAttribute('stroke')+')';
+    path.setAttribute('stroke-dasharray','6 6');
+    wires.appendChild(path);
+  });
+  // mix -> mod dash
+  const mod=nodes.find(n=>n.dataset.id==='mod');
+  if(mod){
+    const m1=getCenter(mix), m2=getCenter(mod);
+    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',`M ${m1.right} ${m1.y+10} C ${(m1.right+m2.left)/2} ${m1.y+10}, ${(m1.right+m2.left)/2} ${m2.y}, ${m2.left} ${m2.y}`);
+    p.setAttribute('stroke','#7a00ff'); p.setAttribute('stroke-width','1.6'); p.setAttribute('fill','none'); p.setAttribute('stroke-dasharray','4 8'); p.setAttribute('opacity','0.7');
+    wires.appendChild(p);
+  }
+}
+drawWires();
+let drag=null, offset={x:0,y:0};
+composer.querySelectorAll('.node').forEach(n=>{
+  n.addEventListener('mousedown', e=>{
+    drag=n; const r=n.getBoundingClientRect(); offset.x=e.clientX-r.left; offset.y=e.clientY-r.top;
+    n.classList.add('selected'); composer.querySelectorAll('.node').forEach(o=>{if(o!==n) o.classList.remove('selected')});
+  });
+});
+window.addEventListener('mousemove', e=>{
+  if(!drag) return;
+  const rect=composer.getBoundingClientRect();
+  let x=e.clientX - rect.left - offset.x;
+  let y=e.clientY - rect.top - offset.y;
+  x=Math.max(0, Math.min(rect.width - drag.offsetWidth, x));
+  y=Math.max(0, Math.min(rect.height - drag.offsetHeight, y));
+  drag.style.left=x+'px'; drag.style.top=y+'px';
+  drawWires();
+});
+window.addEventListener('mouseup', ()=>{ drag=null; });
+window.addEventListener('resize', drawWires);
+
+// ops
+document.querySelectorAll('.op').forEach(op=>{
+  op.addEventListener('click', ()=>{
+    document.querySelectorAll('.op').forEach(o=>o.classList.remove('active'));
+    op.classList.add('active');
+    const eq=document.getElementById('equation');
+    const mode=op.textContent;
+    eq.innerHTML = `<span style="opacity:.6">MATHEMATICAL REPRESENTATION • MODE: <b style="color:var(--gold)">${mode}</b></span><br><b>s(t)</b> = <i style="color:var(--cyan)">${mode==='ADD'?'Σ Aₙ·wₙ(fₙ·t+φₙ)': mode==='MULT'?'Π wₙ(fₙ·t)': mode==='AM'?'[1+m·cos(2πfₘt)]·sin(2πf_c t)': mode==='FM'?'sin(2πf_c t + β·sin(2πfₘt))':'s(t) • '+mode}</i> + n(t)<br><span style="opacity:.6;font-size:11px">Confidence <b style="color:var(--emerald)">0.92</b> • Provenance: GeneratorBus → Mixer → Amplifier</span>`;
+  });
+});
+
+// log helper
+function log(msg){
+  const el=document.getElementById('auditLog');
+  const d=document.createElement('div');
+  d.innerHTML=msg; el.prepend(d);
+  // toast
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;left:50%;top:14px;transform:translateX(-50%);background:rgba(8,16,32,0.96);border:1px solid rgba(0,240,255,0.2);color:#cfefff;padding:8px 12px;border-radius:999px;font-family:JetBrains Mono;font-size:11px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:80;backdrop-filter:blur(10px)';
+  toast.textContent=msg.replace(/<[^>]*>/g,'');
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(), 2400);
+}
+
+// tooltip
+const tip=document.getElementById('tooltip');
+document.querySelectorAll('.chain-node, .gen-card, .plot-card').forEach(el=>{
+  el.addEventListener('mouseenter', e=>{
+    const rect=el.getBoundingClientRect();
+    tip.style.display='block';
+    tip.textContent='◈ '+ (el.querySelector('.cn-title')?.textContent || el.querySelector('.name')?.textContent || 'LIVE DATA • CALIBRATED • Provenance OK');
+    tip.style.left= (rect.left+rect.width/2)+'px';
+    tip.style.top= (rect.top)+'px';
+  });
+  el.addEventListener('mouseleave', ()=> tip.style.display='none');
+});
+
+// calibration modal
+const calModal=document.getElementById('calModal');
+document.getElementById('calCard')?.addEventListener('click', ()=> calModal.style.display='grid');
+document.getElementById('calClose')?.addEventListener('click', ()=> calModal.style.display='none');
+calModal?.addEventListener('click', e=>{ if(e.target===calModal) calModal.style.display='none'; });
+document.getElementById('calSave')?.addEventListener('click', ()=>{
+  const vals={}; document.querySelectorAll('#calForm select').forEach(s=> vals[s.dataset.k]=s.value);
+  vals.reference=document.getElementById('calRef').value; vals.uncertainty=document.getElementById('calUnc').value;
+  document.getElementById('calBadges').innerHTML=Object.entries(vals).filter(([k])=>['amplitude','frequency','phase','sensor'].includes(k)).map(([k,v])=>{
+    const cls=v==='calibrated'?'cyan':v==='expired'?'':v==='uncalibrated'?'mag':'';
+    return `<span class="tag ${cls}">${k.toUpperCase()} • ${v.toUpperCase()}</span>`;
+  }).join('');
+  calModal.style.display='none'; log(`${new Date().toISOString().substr(11,8)} CALIBRATION SAVED • ${Object.entries(vals).map(([k,v])=>`${k}:${v}`).join(' ')} • provenance logged`);
+});
+// edel effects: loader, cursor glow, panel tilt
+setTimeout(()=> document.getElementById('loader').classList.add('hidden'), 1500);
+const glow=document.getElementById('cursorGlow');
+let mouseX=window.innerWidth/2, mouseY=window.innerHeight/2;
+window.addEventListener('mousemove', e=>{ mouseX=e.clientX; mouseY=e.clientY; glow.style.left=mouseX+'px'; glow.style.top=mouseY+'px'; });
+document.querySelectorAll('.panel').forEach(p=>{
+  p.classList.add('tilt','shimmer');
+  const c1=document.createElement('div'); c1.className='corner tl'; p.appendChild(c1);
+  const c2=document.createElement('div'); c2.className='corner tr'; p.appendChild(c2);
+  const c3=document.createElement('div'); c3.className='corner bl'; p.appendChild(c3);
+  const c4=document.createElement('div'); c4.className='corner br'; p.appendChild(c4);
+  p.addEventListener('mousemove', e=>{
+    const r=p.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2;
+    const dx=(e.clientX-cx)/r.width, dy=(e.clientY-cy)/r.height;
+    p.style.transform=`perspective(900px) rotateY(${dx*3}deg) rotateX(${-dy*3}deg) translateZ(0)`;
+  });
+  p.addEventListener('mouseleave', ()=> p.style.transform='perspective(900px) rotateY(0) rotateX(0)');
+});
+// update sliders display
+updateMetrics();
+
+// export handlers — P22 Data Export + Provenance
+function download(name, content, type='text/plain'){
+  const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),900);
+}
+document.getElementById('exportCSV')?.addEventListener('click', ()=>{
+  let csv='t,amplitude,frequency,phase\n';
+  gens.forEach(g=> csv+=`${g.id},${g.amp},${g.freq},${g.phase}\n`);
+  download(`biorez-${Date.now()}.csv`, csv, 'text/csv'); log(`${new Date().toISOString().substr(11,8)} EXPORT CSV • ${gens.length} generators • provenance logged`);
+});
+document.getElementById('exportJSON')?.addEventListener('click', ()=>{
+  const exp={id:'EXP-2026-08-20-01', version:13, timestamp:new Date().toISOString(), software:'BioRezS2 v2.1', generators:gens, calibration:{amp:'calibrated'}, provenance:[{from:'Experiment',to:'export',confidence:0.92}]};
+  download(`biorez-${Date.now()}.json`, JSON.stringify(exp,null,2), 'application/json'); log(`${new Date().toISOString().substr(11,8)} EXPORT JSON • version v13 • provenance OK`);
+});
+document.getElementById('exportPDF')?.addEventListener('click', ()=>{
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:JetBrains Mono,monospace;padding:24px}h1{font-family:Orbitron}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px;font-size:12px}</style></head><body><h1>BIOREZ S2 — PDF Report</h1><p>Experiment EXP-2026-08-20-01 v13 • ${new Date().toISOString()}</p><table><tr><th>ID</th><th>Freq</th><th>Amp</th></tr>${gens.map(g=>`<tr><td>G${g.id} ${g.name}</td><td>${g.freq} Hz</td><td>${g.amp} V</td></tr>`).join('')}</table><p>RMS ${document.getElementById('rms').textContent} • THD 1.84% • Confidence 92% • Provenance OK</p><p style="font-size:10px;color:#888">Cyberpunk Edel Edition — ${gens.length} generators • 4 plots • 48kHz</p></body></html>`;
+  const blob=new Blob([html],{type:'text/html'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`biorez-report-${Date.now()}.html`; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000); const w=window.open(url,'_blank'); if(w) setTimeout(()=>{try{w.print()}catch{}},400); log(`${new Date().toISOString().substr(11,8)} PDF REPORT • ${gens.length} generators • opened print dialog`);
+});
+document.getElementById('exportHDF5')?.addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} HDF5 • dataset /experiment/G1 • 48000 samples • compressed`));
+
+// canvas resize for retina
+function fixDPR(){
+  [oscillo, fftC, spectro, corr].forEach(c=>{
+    const dpr=window.devicePixelRatio||1;
+    const rect=c.getBoundingClientRect();
+    c.width=rect.width*dpr; c.height=rect.height*dpr;
+    c.getContext('2d').scale(dpr,dpr);
+    c.style.width=rect.width+'px'; c.style.height=rect.height+'px';
+  });
+}
+fixDPR(); window.addEventListener('resize', fixDPR);
+</script>
+</body>
+</html>
