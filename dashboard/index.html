@@ -451,15 +451,32 @@ a{color:var(--cyan)}
               <span style="opacity:.7">2f1 20 Hz • f1+f2 27 Hz • 2f1−f2 3 Hz • IM3 <b>−42 dB</b></span>
             </div>
           </div>
-          <div class="health-card" style="padding:8px">
-            <h4>CALIBRATION STATE</h4>
-            <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <span class="tag cyan">AMP • CALIBRATED</span>
-              <span class="tag cyan">FREQ • CALIBRATED</span>
-              <span class="tag">PHASE • EXPIRED</span>
-              <span class="tag mag">SENSOR • UNCALIBRATED</span>
+          <div class="health-card shimmer" style="padding:8px;cursor:pointer" id="calCard">
+            <h4>CALIBRATION STATE <span style="font-family:'JetBrains Mono';font-size:9px;color:var(--gold)">● CLICK TO EDIT</span></h4>
+            <div style="display:flex;gap:6px;flex-wrap:wrap" id="calBadges">
+              <span class="tag cyan" data-cal="amp">AMP • CALIBRATED</span>
+              <span class="tag cyan" data-cal="freq">FREQ • CALIBRATED</span>
+              <span class="tag" data-cal="phase">PHASE • EXPIRED</span>
+              <span class="tag mag" data-cal="sensor">SENSOR • UNCALIBRATED</span>
             </div>
+            <div style="font-family:'JetBrains Mono';font-size:9px;color:var(--muted);margin-top:6px">Ref: PTB 10MHz • ±0.02% • 2026-08-20T06:00:00Z <span style="color:var(--gold)">⚠ PHASE EXPIRED — Nicht kalibrierte Werte markiert</span></div>
           </div>
+<!-- Calibration Modal -->
+<div id="calModal" style="display:none;position:fixed;inset:0;z-index:90;background:rgba(2,8,18,0.78);backdrop-filter:blur(8px);place-items:center">
+  <div style="width:min(520px,90vw);padding:18px;border-radius:16px;background:linear-gradient(180deg, rgba(18,30,56,0.98), rgba(10,18,36,0.98));border:1px solid rgba(0,240,255,.22);box-shadow:0 20px 60px rgba(0,0,0,.6),0 0 24px rgba(0,240,255,.18);position:relative">
+    <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+    <h3 style="margin:0 0 8px;font-family:Orbitron;font-size:12px;letter-spacing:.14em;color:var(--cyan)">⚙ CALIBRATION EDITOR</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="calForm">
+      <label class="field">Amplitude <select data-k="amplitude" style="width:100%;background:transparent;color:var(--cyan);border:none;outline:none"><option>calibrated</option><option>expired</option><option>uncalibrated</option><option>unknown</option></select></label>
+      <label class="field">Frequency <select data-k="frequency" style="width:100%;background:transparent;color:var(--cyan);border:none;outline:none"><option>calibrated</option><option>expired</option><option>uncalibrated</option><option>unknown</option></select></label>
+      <label class="field">Phase <select data-k="phase" style="width:100%;background:transparent;color:var(--gold);border:none;outline:none"><option>expired</option><option>calibrated</option><option>uncalibrated</option></select></label>
+      <label class="field">Sensor <select data-k="sensor" style="width:100%;background:transparent;color:var(--magenta);border:none;outline:none"><option>uncalibrated</option><option>calibrated</option><option>expired</option></select></label>
+    </div>
+    <div class="field" style="margin-top:8px"><label>Reference</label><div class="value"><input id="calRef" value="PTB 10MHz" style="width:100%"></div></div>
+    <div class="field" style="margin-top:8px"><label>Uncertainty</label><div class="value"><input id="calUnc" value="±0.02%" style="width:100%"></div></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn small gold" id="calSave">💾 SAVE</button><button class="btn small" id="calClose">CLOSE</button><span style="margin-left:auto;font-family:'JetBrains Mono';font-size:10px;color:var(--muted)">Provenance logged • Unsicherheit markiert</span></div>
+  </div>
+</div>
         </div>
       </div>
     </section>
@@ -1103,6 +1120,20 @@ document.querySelectorAll('.chain-node, .gen-card, .plot-card').forEach(el=>{
   el.addEventListener('mouseleave', ()=> tip.style.display='none');
 });
 
+// calibration modal
+const calModal=document.getElementById('calModal');
+document.getElementById('calCard')?.addEventListener('click', ()=> calModal.style.display='grid');
+document.getElementById('calClose')?.addEventListener('click', ()=> calModal.style.display='none');
+calModal?.addEventListener('click', e=>{ if(e.target===calModal) calModal.style.display='none'; });
+document.getElementById('calSave')?.addEventListener('click', ()=>{
+  const vals={}; document.querySelectorAll('#calForm select').forEach(s=> vals[s.dataset.k]=s.value);
+  vals.reference=document.getElementById('calRef').value; vals.uncertainty=document.getElementById('calUnc').value;
+  document.getElementById('calBadges').innerHTML=Object.entries(vals).filter(([k])=>['amplitude','frequency','phase','sensor'].includes(k)).map(([k,v])=>{
+    const cls=v==='calibrated'?'cyan':v==='expired'?'':v==='uncalibrated'?'mag':'';
+    return `<span class="tag ${cls}">${k.toUpperCase()} • ${v.toUpperCase()}</span>`;
+  }).join('');
+  calModal.style.display='none'; log(`${new Date().toISOString().substr(11,8)} CALIBRATION SAVED • ${Object.entries(vals).map(([k,v])=>`${k}:${v}`).join(' ')} • provenance logged`);
+});
 // edel effects: loader, cursor glow, panel tilt
 setTimeout(()=> document.getElementById('loader').classList.add('hidden'), 1500);
 const glow=document.getElementById('cursorGlow');
