@@ -619,6 +619,15 @@ a{color:var(--cyan)}
   </div>
 </div>
 
+<div id="comparePanel" style="display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;width:min(860px,92vw);padding:14px;border-radius:16px;background:linear-gradient(180deg, rgba(18,30,56,0.98), rgba(10,18,36,0.98));border:1px solid rgba(0,240,255,.22);box-shadow:0 20px 60px rgba(0,0,0,.6)">
+  <div style="display:flex;align-items:center;justify-content:space-between"><h3 style="margin:0;font-family:Orbitron;font-size:11px;letter-spacing:.14em;color:var(--cyan)">▦ EXPERIMENT VERGLEICH — A vs B vs C • SYNCHRON ZOOMBAR</h3><button class="btn small" onclick="document.getElementById('comparePanel').style.display='none'">✕ CLOSE</button></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+    <div class="plot-card"><div class="plot-head"><span id="compA">EXP-A</span></div><canvas width="400" height="120" style="background:linear-gradient(90deg, rgba(0,240,255,.06), transparent);width:100%;height:120px;display:block"></canvas></div>
+    <div class="plot-card"><div class="plot-head"><span id="compB">EXP-B</span></div><canvas width="400" height="120" style="background:linear-gradient(90deg, rgba(255,200,87,.06), transparent);width:100%;height:120px;display:block"></canvas></div>
+  </div>
+  <div class="field" style="margin-top:10px"><label>DELTA</label><div class="value"><span id="compDelta">Δ Coherence 0.02 • Δ Phase 1.1°</span><span class="tag cyan">SYNCHRON</span></div></div>
+  <div style="font-family:'JetBrains Mono';font-size:10px;color:var(--muted);margin-top:6px">Vergleicht spectrum/RMS/phase/coherence/stability — synchron zoombar, provenance getrennt</div>
+</div>
 <div class="float-controls">
   <button class="float-btn" title="Presets" id="presetBtn">◈</button>
   <button class="float-btn" title="Compare Experiments" id="compareBtn">▦</button>
@@ -1007,7 +1016,18 @@ document.getElementById('playSeq').addEventListener('click', ()=>{
 });
 document.getElementById('saveExp').addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} EXPERIMENT SAVED • version v13 • provenance hash a3f9… • JSON+HDF5`));
 document.getElementById('presetBtn').addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} PRESET • loaded "Detox • Contact" • 12 steps • duration 01:10`));
-document.getElementById('compareBtn').addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} COMPARE • A vs B • coherence Δ 0.02 • phase Δ 1.1°`));
+document.getElementById('compareBtn').addEventListener('click', ()=>{
+  const comp=document.getElementById('comparePanel');
+  comp.style.display= comp.style.display==='none'?'block':'none';
+  if(comp.style.display==='block'){
+    // populate comparison from core/comparison logic simulated
+    const a={id:'EXP-A', rms:'2.31V', coherence:'0.94', phase:'1.2°'}, b={id:'EXP-B', rms:'2.45V', coherence:'0.92', phase:'2.3°'};
+    document.getElementById('compA').textContent=`${a.id} • RMS ${a.rms} • Coh ${a.coherence} • φ ${a.phase}`;
+    document.getElementById('compB').textContent=`${b.id} • RMS ${b.rms} • Coh ${b.coherence} • φ ${b.phase}`;
+    document.getElementById('compDelta').textContent=`Δ Coherence 0.02 • Δ Phase 1.1° • Δ RMS 0.14V • synchron zoombar`;
+    log(`${new Date().toISOString().substr(11,8)} COMPARE • ${a.id} vs ${b.id} • Δ 0.02/1.1° • split-view opened`);
+  }
+});
 document.getElementById('fsBtn').addEventListener('click', ()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); });
 
 // matrix
