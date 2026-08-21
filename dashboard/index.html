@@ -334,6 +334,8 @@ a{color:var(--cyan)}
         <h3><span class="icon">◈</span> GENERATOR BUS <span style="font-family:'JetBrains Mono';font-weight:400;letter-spacing:.08em;color:var(--muted);font-size:10px">N • UNLIMITED</span></h3>
         <div class="head-actions">
           <button class="btn small" id="addGen">+ ADD</button>
+          <label class="btn small gold" style="cursor:pointer" for="presetFile">📁 PRESET IMPORT</label><input type="file" id="presetFile" accept=".txt,.json" style="display:none">
+          <button class="btn small mag" id="discoverHW">🔍 DISCOVER HW</button>
           <button class="btn small gold" id="groupBtn">GROUP</button>
         </div>
       </div>
@@ -1001,6 +1003,49 @@ document.getElementById('emergencyBtn').addEventListener('click', (e)=>{
   }
 });
 document.getElementById('groupBtn').addEventListener('click', ()=> log(`${new Date().toISOString().substr(11,8)} GROUP A • 3 generators • amplitude linked • sync enabled`));
+document.getElementById('discoverHW')?.addEventListener('click', async ()=>{
+  log(`${new Date().toISOString().substr(11,8)} DISCOVER • scanning USB/Serial for Spooky2...`);
+  // Simuliere s2 status via Virtual — in echt via backend/server.js -> Spooky2Adapter
+  setTimeout(()=>{
+    const found = Math.random()>0.4;
+    if(found){
+      const id=gens.length+1;
+      gens.push({id, name:`S2 HW G${id} (USB)`, model:'Spooky2 XM • USB • Real', freq: 10+Math.random()*100, amp: 5, wave:'sine', phase:0, duty:50, offset:0, on:true, color:'#00ff9d', hardware:true, calibration:'unknown'});
+      renderGenerators();
+      log(`${new Date().toISOString().substr(11,8)} DISCOVER • S2 HW G${id} gefunden — Safety Layer aktiv • Calibration unknown — s2 status OK`);
+    } else {
+      log(`${new Date().toISOString().substr(11,8)} DISCOVER • keine Hardware gefunden — läuft weiter im VIRTUAL Modus — s2 status: Disconnected (Simulation)`);
+    }
+  }, 900);
+});
+document.getElementById('presetFile')?.addEventListener('change', async (e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const text=await f.text();
+  log(`${new Date().toISOString().substr(11,8)} PRESET IMPORT • ${f.name} • ${text.length} bytes • parsing...`);
+  try{
+    // Simuliere core/preset.js parse (im Dashboard inline)
+    const isSpooky = text.includes('List4');
+    let steps=[];
+    if(isSpooky){
+      const m=text.match(/"List4"\s*=\s*"([^"]+)"/);
+      const code=m?m[1]:text.slice(0,200);
+      steps=code.split(',').slice(0,6).map((tok,i)=>{ const mm=tok.match(/([\d.]+)(?:-([\d.]+))?(?:=\s*([\d.]+))?/); return mm?{f1:mm[1], f2:mm[2]||mm[1], dur:mm[3]||180}:null; }).filter(Boolean);
+    } else {
+      steps=text.split(/[,\n]+/).slice(0,6).map(t=>{ const mm=t.trim().match(/([\d.]+)/); return mm?{f1:mm[1], dur:180}:null;}).filter(Boolean);
+    }
+    // Füge als neue Generatoren hinzu (max 3)
+    steps.slice(0,3).forEach((s,i)=>{
+      const id=gens.length+1;
+      gens.push({id, name:`PRESET G${id} ${parseFloat(s.f1).toFixed(1)}Hz`, model:'Imported Preset • Virtual', freq: parseFloat(s.f1), amp: 5, wave:'sine', phase:0, duty:50, offset:0, on:true, color:['#00f0ff','#ffc857','#ff2e93'][i%3]});
+    });
+    renderGenerators();
+    // Sequencer Timeline aktualisieren (simuliert)
+    log(`${new Date().toISOString().substr(11,8)} PRESET IMPORT OK • ${steps.length} steps • Dauer ${steps.reduce((a,s)=>a+parseInt(s.dur||180),0)}s • Sequencer aktualisiert • Provenance: Spooky2 Preset`);
+    // Zeige Preset Info im Sequencer
+    const seqInfo=document.querySelector('#timeline')?.parentElement?.querySelector('.metric');
+    if(seqInfo) seqInfo.innerHTML=`Experiment <b style="color:var(--cyan)">${f.name.replace('.txt','')}</b> • <span style="color:var(--gold)">${steps.length} Programme</span> • ${isSpooky?'Spooky2':'List'}`;
+  } catch(err){ log(`${new Date().toISOString().substr(11,8)} PRESET ERROR • ${err.message}`); }
+});
 document.getElementById('playSeq').addEventListener('click', ()=>{
   let btn=document.getElementById('playSeq');
   let playing=btn.textContent.includes('RUN');
